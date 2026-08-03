@@ -440,8 +440,9 @@ function renderDashboard(){
     const st = STATUSES.find(s => s.key === t.status) || STATUSES[0];
     const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
     const hasGuide = !!t.guideUrl;
+    const cardClick = hasGuide ? `window.open('${t.guideUrl}','_blank')` : `openDetail('${id}')`;
     return `
-      <div class="trip-card ${hasGuide?'has-guide':''}" onclick="openDetail('${id}')">
+      <div class="trip-card ${hasGuide?'has-guide':''}" onclick="${cardClick}">
         ${hasGuide ? '<div class="ribbon">📖 Volledige gids</div>' : ''}
         <div class="row-top">
           <div>
@@ -455,7 +456,9 @@ function renderDashboard(){
           <span>☑ ${(t.checklist||[]).filter(c=>!c.done).length} open</span>
           ${budgetTotal ? `<span>€ ${budgetTotal}</span>` : ''}
         </div>
-        ${hasGuide ? `<a class="card-guide-link" href="${t.guideUrl}" target="_blank" onclick="event.stopPropagation()">→ Open reisgids</a>` : ''}
+        ${hasGuide
+          ? `<button class="card-guide-link" style="border:none;width:100%;" onclick="event.stopPropagation(); openDetail('${id}')">⚙ Planning van deze trip bekijken</button>`
+          : ''}
       </div>`;
   }).join('');
 }
