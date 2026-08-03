@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- Firebase (compat SDK) -->
+<!-- Firebase (compat SDK, geen build-tools nodig) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
@@ -176,64 +176,12 @@
   .check-item .box.done{background:var(--teal); border-color:var(--teal); color:white;}
   .check-item .txt.done{text-decoration:line-through; opacity:0.5;}
 
-  /* Budget styling */
-  .budget-row{
-    display:flex; justify-content:space-between; align-items:center;
-    font-family:'IBM Plex Mono',monospace; font-size:13.5px; padding:8px 0;
-    border-bottom:1px dotted rgba(0,0,0,0.15);
-  }
-  .budget-row .info{display:flex; flex-direction:column; gap:2px;}
-  .budget-row .info .cat{font-size:10px; text-transform:uppercase; color:#776a55; letter-spacing:0.5px;}
-  .budget-row .info .desc{font-family:'Inter',sans-serif; color:var(--ink); font-weight:500;}
-  .budget-row .right-side{display:flex; align-items:center; gap:10px;}
-  .budget-row .del{color:var(--stamp-red); font-size:11px; cursor:pointer;}
-  .budget-row.total{font-weight:600; font-size:15px; border-bottom:none; padding-top:12px; border-top:1.5px solid var(--teal); margin-top:4px;}
+  .budget-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
+  .budget-row.total{font-weight:600; border-bottom:none; padding-top:10px;}
 
-  .budget-form{
-    background: rgba(255,255,255,0.4);
-    padding: 12px;
-    border-radius: 4px;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .budget-form-row{
-    display: flex;
-    gap: 6px;
-  }
-
-  /* Modal styling */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(14, 34, 41, 0.85);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal {
-    background: linear-gradient(160deg, var(--parchment-light), var(--parchment));
-    color: var(--ink);
-    border-radius: 6px;
-    padding: 24px;
-    max-width: 480px;
-    width: 100%;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-  }
-  .modal h3 { font-size: 20px; font-style: italic; margin-bottom: 14px; color: var(--navy); }
-  .modal label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; color: #5b5140; display: block; margin-top: 10px; margin-bottom: 4px; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  .btn-sec { background: transparent; border: 1px solid #5b5140; color: #5b5140; padding: 8px 14px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; cursor: pointer; }
-  .btn-pri { background: var(--teal); border: none; color: white; padding: 8px 16px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; cursor: pointer; }
-
-  input[type=text], input[type=number], select, textarea{
+  input[type=text], textarea{
     width:100%; padding:9px 10px; border-radius:4px; border:1px solid rgba(0,0,0,0.15);
-    font-family:'Inter',sans-serif; font-size:14px; background:white; color:var(--ink); margin-bottom:4px;
+    font-family:'Inter',sans-serif; font-size:14px; background:white; color:var(--ink); margin-bottom:8px;
   }
   .inline-add{display:flex; gap:6px; margin-top:6px;}
   .inline-add input{margin-bottom:0;}
@@ -274,7 +222,7 @@
     <div id="tripGrid" class="grid">
       <div class="empty">Reizen laden…</div>
     </div>
-    <div class="add-trip" onclick="openNewTripModal()" style="margin-top:14px;">+ nieuw reisidee toevoegen</div>
+    <div class="add-trip" onclick="openNewTrip()" style="margin-top:14px;">+ nieuw reisidee toevoegen</div>
   </div>
 
   <!-- DETAIL VIEW -->
@@ -322,26 +270,13 @@
       </div>
 
       <div class="section">
-        <h3>Gedetailleerd Budget</h3>
+        <h3>Budget</h3>
         <div class="hr"></div>
         <div id="d-budget"></div>
-        
-        <div class="budget-form">
-          <div class="budget-form-row">
-            <select id="newBudgetCat" style="flex:1;">
-              <option value="🏨 Hotel">🏨 Hotel / Verblijf</option>
-              <option value="✈️ Vlucht">✈️ Vlucht / Transport</option>
-              <option value="🚗 Auto">🚗 Autohuur / Benzine</option>
-              <option value="🍽️ Eten">🍽️ Eten &amp; Drinken</option>
-              <option value="🎟️ Excursies">🎟️ Excursies &amp; Activiteiten</option>
-              <option value="💡 Overig">💡 Overige kosten</option>
-            </select>
-            <input type="number" id="newBudgetAmount" placeholder="€ Bedrag" style="flex:1;">
-          </div>
-          <div class="budget-form-row">
-            <input type="text" id="newBudgetLabel" placeholder="Omschrijving (bv. Vlucht Zaventem)">
-            <button onclick="addBudget()" class="add-btn">Toevoegen</button>
-          </div>
+        <div class="inline-add">
+          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Hotel)" style="flex:2;">
+          <input type="text" id="newBudgetAmount" placeholder="€" style="flex:1;">
+          <button onclick="addBudget()">+</button>
         </div>
       </div>
 
@@ -350,56 +285,14 @@
 
 </main>
 
-<!-- MODAL: NIEUW REISPLAN -->
-<div id="newTripModal" class="modal-overlay">
-  <div class="modal">
-    <h3>Nieuw Reisplan</h3>
-    
-    <label for="m-name">Naam reis</label>
-    <input type="text" id="m-name" placeholder="bv. Sicilië, Rome, Andalusië...">
-
-    <label for="m-dest">Bestemming / Periode</label>
-    <input type="text" id="m-dest" placeholder="bv. Italië — Mei 2027">
-
-    <label for="m-guide">Link naar Reisgids (optioneel)</label>
-    <input type="text" id="m-guide" placeholder="https://...">
-
-    <div style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; color:var(--teal); font-weight:600;">
-      Startbudget instellen
-    </div>
-
-    <div style="display:flex; gap:6px;">
-      <div style="flex:1;">
-        <label for="m-b1-label">Post 1</label>
-        <input type="text" id="m-b1-label" value="Hotel / Verblijf">
-      </div>
-      <div style="width:100px;">
-        <label for="m-b1-amt">Bedrag (€)</label>
-        <input type="number" id="m-b1-amt" placeholder="0">
-      </div>
-    </div>
-
-    <div style="display:flex; gap:6px;">
-      <div style="flex:1;">
-        <label for="m-b2-label">Post 2</label>
-        <input type="text" id="m-b2-label" value="Vliegtickets / Transport">
-      </div>
-      <div style="width:100px;">
-        <label for="m-b2-amt">Bedrag (€)</label>
-        <input type="number" id="m-b2-amt" placeholder="0">
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-sec" onclick="closeNewTripModal()">Annuleren</button>
-      <button class="btn-pri" onclick="saveNewTrip()">Opslaan &amp; Openen</button>
-    </div>
-  </div>
-</div>
-
 <div class="sync-status"><span class="dot" id="syncDot"></span><span id="syncText">verbinden…</span></div>
 
 <script>
+/* ================= FIREBASE CONFIG =================
+   Vervang onderstaande waarden door je eigen config uit
+   de Firebase Console → wiezen-club project → Project settings
+   → "Your apps" → Web app → SDK setup and configuration.
+   ==================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
   authDomain: "wiezen-club.firebaseapp.com",
@@ -526,8 +419,8 @@ async function seedAlicante(){
       {text:"TRAM-tickets Benidorm bekijken (dag zelf te koop)", done:false}
     ],
     budget: [
-      {category: "🏨 Hotel", label:"Les Monges Palace (4 nachten)", amount:440},
-      {category: "✈️ Vlucht", label:"Vlucht Zaventem (2 pers.)", amount:280}
+      {label:"Hotel (4 nachten)", amount:440},
+      {label:"Vlucht (2 pers.)", amount:280}
     ]
   });
 }
@@ -613,24 +506,9 @@ function renderDetail(){
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen acties</div>';
 
   const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
-  const budgetHtml = (t.budget||[]).map((b, i) => `
-    <div class="budget-row">
-      <div class="info">
-        <span class="cat">${b.category || '💡 Overig'}</span>
-        <span class="desc">${b.label}</span>
-      </div>
-      <div class="right-side">
-        <span class="mono">€ ${b.amount}</span>
-        <span class="del" onclick="delBudget(${i})">✕</span>
-      </div>
-    </div>
-  `).join('');
-
-  document.getElementById('d-budget').innerHTML = budgetHtml +
-    `<div class="budget-row total">
-      <span>Totaal Budget</span>
-      <span class="mono">€ ${budgetTotal}</span>
-    </div>`;
+  document.getElementById('d-budget').innerHTML =
+    (t.budget||[]).map(b => `<div class="budget-row"><span>${b.label}</span><span class="mono">€ ${b.amount}</span></div>`).join('')
+    + `<div class="budget-row total"><span>Totaal</span><span class="mono">€ ${budgetTotal}</span></div>`;
 }
 
 async function saveTrip(){
@@ -674,65 +552,22 @@ function toggleCheck(i){
 }
 
 function addBudget(){
-  const cat = document.getElementById('newBudgetCat').value;
   const l = document.getElementById('newBudgetLabel');
   const a = document.getElementById('newBudgetAmount');
-  if(!l.value.trim() || !a.value) return;
+  if(!l.value.trim() || !a.value.trim()) return;
   trips[activeTripId].budget = trips[activeTripId].budget || [];
-  trips[activeTripId].budget.push({category: cat, label: l.value.trim(), amount: Number(a.value)});
+  trips[activeTripId].budget.push({label:l.value.trim(), amount:Number(a.value)});
   l.value=''; a.value='';
   saveTrip(); renderDetail();
 }
 
-function delBudget(i){
-  trips[activeTripId].budget.splice(i,1);
-  saveTrip(); renderDetail();
-}
-
-/* Modal functionaliteit voor nieuwe reis */
-function openNewTripModal(){
-  document.getElementById('m-name').value = '';
-  document.getElementById('m-dest').value = '';
-  document.getElementById('m-guide').value = '';
-  document.getElementById('m-b1-amt').value = '';
-  document.getElementById('m-b2-amt').value = '';
-  document.getElementById('newTripModal').classList.add('active');
-}
-
-function closeNewTripModal(){
-  document.getElementById('newTripModal').classList.remove('active');
-}
-
-async function saveNewTrip(){
-  const name = document.getElementById('m-name').value.trim();
-  if(!name){ alert("Vul a.u.b. een naam in voor de reis."); return; }
-  
-  const dest = document.getElementById('m-dest').value.trim();
-  const guide = document.getElementById('m-guide').value.trim();
-  
-  const b1Label = document.getElementById('m-b1-label').value.trim();
-  const b1Amt = Number(document.getElementById('m-b1-amt').value);
-  const b2Label = document.getElementById('m-b2-label').value.trim();
-  const b2Amt = Number(document.getElementById('m-b2-amt').value);
-
-  const budget = [];
-  if(b1Amt > 0) budget.push({category: "🏨 Hotel", label: b1Label || "Verblijf", amount: b1Amt});
-  if(b2Amt > 0) budget.push({category: "✈️ Vlucht", label: b2Label || "Transport", amount: b2Amt});
-
+async function openNewTrip(){
+  const name = prompt("Naam van de trip (bv. Sicilië):");
+  if(!name) return;
+  const dest = prompt("Bestemming:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {
-    name: name,
-    destination: dest,
-    status: 'idee',
-    notes: [],
-    checklist: [],
-    budget: budget,
-    guideUrl: guide,
-    createdAt: Date.now()
-  };
-
+  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
-  closeNewTripModal();
   renderDashboard();
   openDetail(id);
 }
