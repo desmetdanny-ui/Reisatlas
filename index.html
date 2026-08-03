@@ -369,7 +369,7 @@ function renderDashboard(){
           <div class="stamp ${t.status}">${st.label}</div>
         </div>
         <div class="meta">
-          <span>📝 ${(t.notes||[]).length} idee${(t.notes||[]).length===1?'':ën'}</span>
+          <span>📝 ${(t.notes||[]).length} idee${(t.notes||[]).length===1?'':'ën'}</span>
           <span>☑ ${(t.checklist||[]).filter(c=>!c.done).length} open</span>
           ${budgetTotal ? `<span>€ ${budgetTotal}</span>` : ''}
         </div>
