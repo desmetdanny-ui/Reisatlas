@@ -1,58 +1,743 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mijn GitHub Page</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f6f8fa;
-            color: #24292e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: #ffffff;
-            border: 1px solid #e1e4e8;
-            border-radius: 6px;
-            padding: 32px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        h1 {
-            color: #0366d6;
-            margin-top: 0;
-            font-size: 24px;
-            border-bottom: 1px solid #eaecef;
-            padding-bottom: 10px;
-        }
-        p {
-            line-height: 1.5;
-            font-size: 16px;
-        }
-        .footer {
-            margin-top: 24px;
-            font-size: 14px;
-            color: #586069;
-            border-top: 1px solid #eaecef;
-            padding-top: 12px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Reisatlas</title>
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+<link rel="icon" sizes="32x32" href="icon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reisatlas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --navy: #16303B;
+    --navy-deep: #0E2229;
+    --parchment: #E7DAB4;
+    --parchment-light: #F1E8CE;
+    --ink: #212B24;
+    --brass: #B8895D;
+    --teal: #2F6B5E;
+    --stamp-red: #A13D2B;
+    --line: rgba(231,218,180,0.18);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--navy); color:var(--parchment-light); font-family:'Inter',sans-serif; min-height:100vh;}
+  body{
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(184,137,93,0.10), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(47,107,94,0.15), transparent 45%);
+  }
+  h1,h2,h3{font-family:'Playfair Display', serif; margin:0; letter-spacing:0.2px;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  header{
+    padding:28px 20px 18px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, var(--navy) 60%, rgba(22,48,59,0.92));
+    backdrop-filter: blur(6px);
+  }
+  header .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:2.5px;
+    text-transform:uppercase; color:var(--brass); margin-bottom:4px;
+  }
+  header h1{font-size:28px; font-style:italic; color:var(--parchment-light); font-weight:700;}
+  header .sub{font-size:13px; color:rgba(231,218,180,0.6); margin-top:4px;}
+
+  main{padding:20px; max-width:640px; margin:0 auto; padding-bottom:100px;}
+
+  /* Dashboard grid */
+  .grid{display:flex; flex-direction:column; gap:14px; margin-top:18px;}
+
+  .trip-card{
+    background: linear-gradient(160deg, var(--parchment-light), var(--parchment));
+    color:var(--ink);
+    border-radius:4px;
+    padding:18px 18px 16px;
+    position:relative;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+    border:1px solid rgba(0,0,0,0.06);
+    cursor:pointer;
+    transition: transform .15s ease;
+  }
+  .trip-card:active{transform: scale(0.98);}
+  .trip-card::before{
+    content:"";
+    position:absolute; left:0; top:14px; bottom:14px; width:4px;
+    background:var(--teal);
+    border-radius:0 3px 3px 0;
+  }
+  .trip-card .row-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .trip-card h2{font-size:21px;}
+  .trip-card .dest{font-size:12px; color:#5b5140; margin-top:2px; font-family:'IBM Plex Mono',monospace;}
+
+  .stamp{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px; text-transform:uppercase; letter-spacing:1px;
+    border:1.5px dashed currentColor;
+    border-radius:50%;
+    width:60px; height:60px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    flex-shrink:0;
+    transform: rotate(-6deg);
+    line-height:1.15;
+    padding:4px;
+  }
+  .stamp.idee{color:var(--stamp-red);}
+  .stamp.planning{color:var(--brass);}
+  .stamp.bevestigd{color:var(--teal);}
+  .stamp.onderweg{color:#3060A0;}
+  .stamp.afgerond{color:#6b6b6b;}
+
+  .trip-card .meta{font-size:12px; color:#5b5140; margin-top:10px; display:flex; gap:14px; flex-wrap:wrap;}
+  .trip-card .meta span{display:flex; align-items:center; gap:4px;}
+
+  .trip-card.has-guide{padding-top:32px;}
+  .ribbon{
+    position:absolute; top:0; right:14px;
+    background:var(--teal); color:white;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:5px 12px; border-radius:0 0 6px 6px;
+  }
+  .card-guide-link{
+    display:block; margin-top:12px; text-align:center;
+    background:var(--brass); color:white; text-decoration:none;
+    padding:9px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    letter-spacing:0.5px; text-transform:uppercase;
+  }
+
+  .add-trip{
+    border:1.5px dashed rgba(231,218,180,0.35);
+    border-radius:4px; padding:16px; text-align:center;
+    color:rgba(231,218,180,0.6); font-family:'IBM Plex Mono',monospace; font-size:13px;
+    cursor:pointer;
+  }
+  .add-trip:active{background:rgba(231,218,180,0.05);}
+
+  /* Detail view */
+  .detail{display:none;}
+  .detail.active{display:block;}
+  .dashboard.hidden{display:none;}
+
+  .back-btn{
+    background:none; border:none; color:var(--brass); font-family:'IBM Plex Mono',monospace;
+    font-size:13px; padding:0; margin-bottom:14px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+
+  .page{
+    background: linear-gradient(160deg, var(--parchment-light), var(--parchment));
+    color:var(--ink); border-radius:4px; padding:22px 20px 26px;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.3);
+  }
+  .page h2{font-size:26px; font-style:italic;}
+  .page .dest-line{font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5b5140; margin-top:4px;}
+
+  .status-picker{display:flex; gap:6px; margin-top:16px; flex-wrap:wrap;}
+  .status-picker button{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px;
+    padding:6px 10px; border-radius:20px; border:1px solid #5b5140; background:transparent; color:#5b5140;
+  }
+  .status-picker button.active{background:var(--teal); color:white; border-color:var(--teal);}
+
+  .section{margin-top:22px;}
+  .section h3{font-size:14px; text-transform:uppercase; letter-spacing:1.5px; color:#5b5140; font-style:normal; font-family:'IBM Plex Mono',monospace; font-weight:500;}
+  .section .hr{height:1px; background:rgba(0,0,0,0.1); margin:8px 0 12px;}
+
+  .note-item{
+    background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px; font-size:14px; line-height:1.4;
+    display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+  }
+  .note-item .del{color:var(--stamp-red); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; flex-shrink:0;}
+
+  .hotel-item{
+    background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+  }
+  .hotel-item a{color:var(--teal); font-weight:600; text-decoration:none; font-size:14px;}
+  .hotel-item a:active{opacity:0.7;}
+  .hotel-item .del{color:var(--stamp-red); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; flex-shrink:0;}
+
+  .check-item{display:flex; align-items:flex-start; gap:10px; margin-bottom:9px; font-size:14px;}
+  .check-item .box{
+    width:18px; height:18px; border:1.5px solid #5b5140; border-radius:3px; flex-shrink:0; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer;
+  }
+  .check-item .box.done{background:var(--teal); border-color:var(--teal); color:white;}
+  .check-item .txt.done{text-decoration:line-through; opacity:0.5;}
+
+  /* Budget styling */
+  .budget-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono',monospace; font-size:13.5px; padding:8px 0;
+    border-bottom:1px dotted rgba(0,0,0,0.15);
+  }
+  .budget-row .info{display:flex; flex-direction:column; gap:2px;}
+  .budget-row .info .cat{font-size:10px; text-transform:uppercase; color:#776a55; letter-spacing:0.5px;}
+  .budget-row .info .desc{font-family:'Inter',sans-serif; color:var(--ink); font-weight:500;}
+  .budget-row .right-side{display:flex; align-items:center; gap:10px;}
+  .budget-row .del{color:var(--stamp-red); font-size:11px; cursor:pointer;}
+  .budget-row.total{font-weight:600; font-size:15px; border-bottom:none; padding-top:12px; border-top:1.5px solid var(--teal); margin-top:4px;}
+
+  .budget-form{
+    background: rgba(255,255,255,0.4);
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .budget-form-row{
+    display: flex;
+    gap: 6px;
+  }
+
+  /* Modal styling */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(14, 34, 41, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: linear-gradient(160deg, var(--parchment-light), var(--parchment));
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  }
+  .modal h3 { font-size: 20px; font-style: italic; margin-bottom: 14px; color: var(--navy); }
+  .modal label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; color: #5b5140; display: block; margin-top: 10px; margin-bottom: 4px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .btn-sec { background: transparent; border: 1px solid #5b5140; color: #5b5140; padding: 8px 14px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; cursor: pointer; }
+  .btn-pri { background: var(--teal); border: none; color: white; padding: 8px 16px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; cursor: pointer; }
+
+  input[type=text], input[type=number], select, textarea{
+    width:100%; padding:9px 10px; border-radius:4px; border:1px solid rgba(0,0,0,0.15);
+    font-family:'Inter',sans-serif; font-size:14px; background:white; color:var(--ink); margin-bottom:4px;
+  }
+  .inline-add{display:flex; gap:6px; margin-top:6px;}
+  .inline-add input{margin-bottom:0;}
+  .inline-add button, .add-btn{
+    background:var(--teal); color:white; border:none; border-radius:4px; padding:9px 14px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; flex-shrink:0;
+  }
+
+  .guide-link{
+    display:block; margin-top:10px; background:var(--brass); color:white; text-align:center;
+    padding:11px; border-radius:4px; text-decoration:none; font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    letter-spacing:0.5px; text-transform:uppercase;
+  }
+
+  .sync-status{
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:rgba(231,218,180,0.45);
+    display:flex; align-items:center; gap:6px;
+  }
+  .dot{width:6px; height:6px; border-radius:50%; background:var(--teal);}
+  .dot.off{background:var(--stamp-red);}
+
+  .empty{text-align:center; padding:40px 10px; color:rgba(231,218,180,0.5); font-size:14px;}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welkom op mijn GitHub Pagina!</h1>
-        <p>Dit is een eenvoudig <code>index.html</code> bestand dat gebruikt kan worden om een website te hosten via GitHub Pages.</p>
-        <div class="footer">
-            <p><strong>Status:</strong> Gereed voor upload</p>
-        </div>
+
+<header>
+  <div class="eyebrow">Danny &amp; Martine — logboek</div>
+  <h1>Reisatlas</h1>
+  <div class="sub">Waar losse ideeën uitgroeien tot een reisgids</div>
+</header>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="dashboard">
+    <div id="tripGrid" class="grid">
+      <div class="empty">Reizen laden…</div>
     </div>
+    <div class="add-trip" onclick="openNewTripModal()" style="margin-top:14px;">+ nieuw reisidee toevoegen</div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="detail" class="detail">
+    <button class="back-btn" onclick="closeDetail()">← terug naar overzicht</button>
+    <div class="page">
+      <h2 id="d-name">—</h2>
+      <div class="dest-line" id="d-dest">—</div>
+
+      <div class="status-picker" id="d-status"></div>
+
+      <div class="section" id="guideSection" style="display:none;">
+        <a id="d-guideLink" class="guide-link" href="#" target="_blank">→ Open volledige reisgids</a>
+      </div>
+
+      <div class="section">
+        <h3>Hotel</h3>
+        <div class="hr"></div>
+        <div id="d-hotels"></div>
+        <div class="inline-add">
+          <input type="text" id="newHotelName" placeholder="Naam hotel" style="flex:2;">
+          <input type="text" id="newHotelUrl" placeholder="Link (https://…)" style="flex:2;">
+          <button onclick="addHotel()">+</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Losse ideeën &amp; notities</h3>
+        <div class="hr"></div>
+        <div id="d-notes"></div>
+        <div class="inline-add">
+          <input type="text" id="newNote" placeholder="Nieuw idee of notitie…">
+          <button onclick="addNote()">+</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Checklist</h3>
+        <div class="hr"></div>
+        <div id="d-checklist"></div>
+        <div class="inline-add">
+          <input type="text" id="newCheck" placeholder="Nieuwe actie…">
+          <button onclick="addCheck()">+</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Gedetailleerd Budget</h3>
+        <div class="hr"></div>
+        <div id="d-budget"></div>
+        
+        <div class="budget-form">
+          <div class="budget-form-row">
+            <select id="newBudgetCat" style="flex:1;">
+              <option value="🏨 Hotel">🏨 Hotel / Verblijf</option>
+              <option value="✈️ Vlucht">✈️ Vlucht / Transport</option>
+              <option value="🚗 Auto">🚗 Autohuur / Benzine</option>
+              <option value="🍽️ Eten">🍽️ Eten &amp; Drinken</option>
+              <option value="🎟️ Excursies">🎟️ Excursies &amp; Activiteiten</option>
+              <option value="💡 Overig">💡 Overige kosten</option>
+            </select>
+            <input type="number" id="newBudgetAmount" placeholder="€ Bedrag" style="flex:1;">
+          </div>
+          <div class="budget-form-row">
+            <input type="text" id="newBudgetLabel" placeholder="Omschrijving (bv. Vlucht Zaventem)">
+            <button onclick="addBudget()" class="add-btn">Toevoegen</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: NIEUW REISPLAN -->
+<div id="newTripModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Nieuw Reisplan</h3>
+    
+    <label for="m-name">Naam reis</label>
+    <input type="text" id="m-name" placeholder="bv. Sicilië, Rome, Andalusië...">
+
+    <label for="m-dest">Bestemming / Periode</label>
+    <input type="text" id="m-dest" placeholder="bv. Italië — Mei 2027">
+
+    <label for="m-guide">Link naar Reisgids (optioneel)</label>
+    <input type="text" id="m-guide" placeholder="https://...">
+
+    <div style="margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; color:var(--teal); font-weight:600;">
+      Startbudget instellen
+    </div>
+
+    <div style="display:flex; gap:6px;">
+      <div style="flex:1;">
+        <label for="m-b1-label">Post 1</label>
+        <input type="text" id="m-b1-label" value="Hotel / Verblijf">
+      </div>
+      <div style="width:100px;">
+        <label for="m-b1-amt">Bedrag (€)</label>
+        <input type="number" id="m-b1-amt" placeholder="0">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:6px;">
+      <div style="flex:1;">
+        <label for="m-b2-label">Post 2</label>
+        <input type="text" id="m-b2-label" value="Vliegtickets / Transport">
+      </div>
+      <div style="width:100px;">
+        <label for="m-b2-amt">Bedrag (€)</label>
+        <input type="number" id="m-b2-amt" placeholder="0">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="closeNewTripModal()">Annuleren</button>
+      <button class="btn-pri" onclick="saveNewTrip()">Opslaan &amp; Openen</button>
+    </div>
+  </div>
+</div>
+
+<div class="sync-status"><span class="dot" id="syncDot"></span><span id="syncText">verbinden…</span></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
+  authDomain: "wiezen-club.firebaseapp.com",
+  projectId: "wiezen-club",
+  storageBucket: "wiezen-club.firebasestorage.app",
+  messagingSenderId: "184449254432",
+  appId: "1:184449254432:web:e4f4f93acae57a9a736845",
+  measurementId: "G-94G6872QG4"
+};
+
+let db = null;
+let firebaseOk = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  firebaseOk = true;
+} catch(e) {
+  console.error("Firebase init mislukt:", e);
+}
+
+const STATUSES = [
+  {key:"idee", label:"💭 Idee"},
+  {key:"planning", label:"📋 Planning"},
+  {key:"bevestigd", label:"✅ Bevestigd"},
+  {key:"onderweg", label:"✈️ Onderweg"},
+  {key:"afgerond", label:"📖 Afgerond"}
+];
+
+let trips = {};
+let activeTripId = null;
+
+function setSync(ok, text){
+  document.getElementById('syncDot').className = 'dot' + (ok ? '' : ' off');
+  document.getElementById('syncText').textContent = text;
+}
+
+async function loadTrips(){
+  if(!firebaseOk){ setSync(false, "Firebase niet geconfigureerd"); renderDashboardFallback(); return; }
+  try{
+    let snap = await db.collection('trips').get();
+    trips = {};
+    snap.forEach(doc => trips[doc.id] = doc.data());
+
+    let needsReload = false;
+    if(!trips['alicante-nov']){ await seedAlicante(); needsReload = true; }
+    else if(!trips['alicante-nov'].hotels){
+      await db.collection('trips').doc('alicante-nov').update({
+        hotels: [{name: "Les Monges Palace Boutique — Double room, 10-14 nov, €440", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-14&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261114&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}]
+      });
+      needsReload = true;
+    }
+    if(!trips['aveiro-2026']){ await seedAveiro(); needsReload = true; }
+    if(!trips['lanzarote-2027']){ await seedLanzarote(); needsReload = true; }
+
+    if(needsReload){
+      snap = await db.collection('trips').get();
+      trips = {};
+      snap.forEach(doc => trips[doc.id] = doc.data());
+    }
+    setSync(true, "gesynct");
+    renderDashboard();
+  }catch(e){
+    console.error(e);
+    setSync(false, "geen verbinding — check config");
+    renderDashboardFallback();
+  }
+}
+
+async function seedAveiro(){
+  await db.collection('trips').doc('aveiro-2026').set({
+    name: "Aveiro",
+    destination: "Aveiro, Portugal",
+    status: "bevestigd",
+    createdAt: Date.now(),
+    guideUrl: "https://desmetdanny-ui.github.io/Aveiro/",
+    notes: [
+      "15-19 september 2026, Turim Aveiro Palace",
+      "Vluchten SN3809 / SN3812, transfer reservering SD2752910426",
+      "E-biketocht op 16/09 om 09:30, ref. 1426044289"
+    ],
+    checklist: [],
+    budget: []
+  });
+}
+
+async function seedLanzarote(){
+  await db.collection('trips').doc('lanzarote-2027').set({
+    name: "Lanzarote",
+    destination: "Playa Blanca, Lanzarote",
+    status: "bevestigd",
+    createdAt: Date.now(),
+    guideUrl: "https://desmetdanny-ui.github.io/Lanzarote/",
+    notes: [
+      "2-12 januari 2027, H10 Rubicón Horizons Collection",
+      "Privilege All Inclusive",
+      "Vluchten SN3787 / SN3788"
+    ],
+    checklist: [],
+    budget: []
+  });
+}
+
+async function seedAlicante(){
+  await db.collection('trips').doc('alicante-nov').set({
+    name: "Alicante",
+    destination: "Alicante, Spanje",
+    status: "idee",
+    createdAt: Date.now(),
+    guideUrl: "",
+    notes: [
+      "4 nachten in november, 2 personen — nog niet zeker of we gaan",
+      "Ontbijt niet inbegrepen (+/- €12 pp/dag)",
+      "Budget hotel: max €500 voor 4 nachten",
+      "Vlucht vanuit Zaventem (BRU), niet Charleroi — Brussels Airlines/Vueling/Transavia, ca. €110-160 pp retour met enkel handbagage",
+      "Dagtrip gepland met TRAM lijn 1 naar Benidorm — vertrek Mercado/Luceros, ±1u10 reistijd, langs de kust"
+    ],
+    hotels: [
+      {name: "Les Monges Palace Boutique — Double room, 10-14 nov, €440", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-14&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261114&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}
+    ],
+    checklist: [
+      {text:"Datum ooglidcorrectie Martine kennen", done:false},
+      {text:"Hotel Les Monges Palace definitief bevestigen", done:false},
+      {text:"Vlucht boeken (Zaventem, handbagage)", done:false},
+      {text:"TRAM-tickets Benidorm bekijken (dag zelf te koop)", done:false}
+    ],
+    budget: [
+      {category: "🏨 Hotel", label:"Les Monges Palace (4 nachten)", amount:440},
+      {category: "✈️ Vlucht", label:"Vlucht Zaventem (2 pers.)", amount:280}
+    ]
+  });
+}
+
+function renderDashboardFallback(){
+  document.getElementById('tripGrid').innerHTML =
+    '<div class="empty">Kan niet verbinden met Firebase.<br>Vul de firebaseConfig bovenaan het bestand in.</div>';
+}
+
+function renderDashboard(){
+  const grid = document.getElementById('tripGrid');
+  const ids = Object.keys(trips);
+  if(ids.length === 0){ grid.innerHTML = '<div class="empty">Nog geen reizen. Voeg er hieronder een toe.</div>'; return; }
+
+  grid.innerHTML = ids.map(id => {
+    const t = trips[id];
+    const st = STATUSES.find(s => s.key === t.status) || STATUSES[0];
+    const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+    const hasGuide = !!t.guideUrl;
+    return `
+      <div class="trip-card ${hasGuide?'has-guide':''}" onclick="openDetail('${id}')">
+        ${hasGuide ? '<div class="ribbon">📖 Volledige gids</div>' : ''}
+        <div class="row-top">
+          <div>
+            <h2>${t.name||'Naamloos'}</h2>
+            <div class="dest">${t.destination||''}</div>
+          </div>
+          <div class="stamp ${t.status}">${st.label}</div>
+        </div>
+        <div class="meta">
+          <span>📝 ${(t.notes||[]).length} idee${(t.notes||[]).length===1?'':'ën'}</span>
+          <span>☑ ${(t.checklist||[]).filter(c=>!c.done).length} open</span>
+          ${budgetTotal ? `<span>€ ${budgetTotal}</span>` : ''}
+        </div>
+        ${hasGuide ? `<a class="card-guide-link" href="${t.guideUrl}" target="_blank" onclick="event.stopPropagation()">→ Open reisgids</a>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function openDetail(id){
+  activeTripId = id;
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('detail').classList.add('active');
+  renderDetail();
+}
+function closeDetail(){
+  activeTripId = null;
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('detail').classList.remove('active');
+  renderDashboard();
+}
+
+function renderDetail(){
+  const t = trips[activeTripId];
+  document.getElementById('d-name').textContent = t.name || 'Naamloos';
+  document.getElementById('d-dest').textContent = t.destination || '';
+
+  document.getElementById('d-status').innerHTML = STATUSES.map(s =>
+    `<button class="${s.key===t.status?'active':''}" onclick="setStatus('${s.key}')">${s.label}</button>`
+  ).join('');
+
+  const guideSection = document.getElementById('guideSection');
+  if(t.guideUrl){
+    guideSection.style.display = 'block';
+    document.getElementById('d-guideLink').href = t.guideUrl;
+  } else {
+    guideSection.style.display = 'none';
+  }
+
+  document.getElementById('d-hotels').innerHTML = (t.hotels||[]).map((h,i) =>
+    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="del" onclick="delHotel(${i})">verwijder</span></div>`
+  ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen hotel gekozen</div>';
+
+  document.getElementById('d-notes').innerHTML = (t.notes||[]).map((n,i) =>
+    `<div class="note-item"><span>${n}</span><span class="del" onclick="delNote(${i})">verwijder</span></div>`
+  ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen notities</div>';
+
+  document.getElementById('d-checklist').innerHTML = (t.checklist||[]).map((c,i) =>
+    `<div class="check-item">
+      <div class="box ${c.done?'done':''}" onclick="toggleCheck(${i})">${c.done?'✓':''}</div>
+      <span class="txt ${c.done?'done':''}">${c.text}</span>
+    </div>`
+  ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen acties</div>';
+
+  const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+  const budgetHtml = (t.budget||[]).map((b, i) => `
+    <div class="budget-row">
+      <div class="info">
+        <span class="cat">${b.category || '💡 Overig'}</span>
+        <span class="desc">${b.label}</span>
+      </div>
+      <div class="right-side">
+        <span class="mono">€ ${b.amount}</span>
+        <span class="del" onclick="delBudget(${i})">✕</span>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('d-budget').innerHTML = budgetHtml +
+    `<div class="budget-row total">
+      <span>Totaal Budget</span>
+      <span class="mono">€ ${budgetTotal}</span>
+    </div>`;
+}
+
+async function saveTrip(){
+  await db.collection('trips').doc(activeTripId).set(trips[activeTripId]);
+}
+
+function setStatus(key){ trips[activeTripId].status = key; saveTrip(); renderDetail(); }
+
+function addHotel(){
+  const n = document.getElementById('newHotelName');
+  const u = document.getElementById('newHotelUrl');
+  if(!n.value.trim() || !u.value.trim()) return;
+  trips[activeTripId].hotels = trips[activeTripId].hotels || [];
+  trips[activeTripId].hotels.push({name:n.value.trim(), url:u.value.trim()});
+  n.value=''; u.value='';
+  saveTrip(); renderDetail();
+}
+function delHotel(i){ trips[activeTripId].hotels.splice(i,1); saveTrip(); renderDetail(); }
+
+function addNote(){
+  const inp = document.getElementById('newNote');
+  if(!inp.value.trim()) return;
+  trips[activeTripId].notes = trips[activeTripId].notes || [];
+  trips[activeTripId].notes.push(inp.value.trim());
+  inp.value = '';
+  saveTrip(); renderDetail();
+}
+function delNote(i){ trips[activeTripId].notes.splice(i,1); saveTrip(); renderDetail(); }
+
+function addCheck(){
+  const inp = document.getElementById('newCheck');
+  if(!inp.value.trim()) return;
+  trips[activeTripId].checklist = trips[activeTripId].checklist || [];
+  trips[activeTripId].checklist.push({text: inp.value.trim(), done:false});
+  inp.value = '';
+  saveTrip(); renderDetail();
+}
+function toggleCheck(i){
+  trips[activeTripId].checklist[i].done = !trips[activeTripId].checklist[i].done;
+  saveTrip(); renderDetail();
+}
+
+function addBudget(){
+  const cat = document.getElementById('newBudgetCat').value;
+  const l = document.getElementById('newBudgetLabel');
+  const a = document.getElementById('newBudgetAmount');
+  if(!l.value.trim() || !a.value) return;
+  trips[activeTripId].budget = trips[activeTripId].budget || [];
+  trips[activeTripId].budget.push({category: cat, label: l.value.trim(), amount: Number(a.value)});
+  l.value=''; a.value='';
+  saveTrip(); renderDetail();
+}
+
+function delBudget(i){
+  trips[activeTripId].budget.splice(i,1);
+  saveTrip(); renderDetail();
+}
+
+/* Modal functionaliteit voor nieuwe reis */
+function openNewTripModal(){
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-dest').value = '';
+  document.getElementById('m-guide').value = '';
+  document.getElementById('m-b1-amt').value = '';
+  document.getElementById('m-b2-amt').value = '';
+  document.getElementById('newTripModal').classList.add('active');
+}
+
+function closeNewTripModal(){
+  document.getElementById('newTripModal').classList.remove('active');
+}
+
+async function saveNewTrip(){
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){ alert("Vul a.u.b. een naam in voor de reis."); return; }
+  
+  const dest = document.getElementById('m-dest').value.trim();
+  const guide = document.getElementById('m-guide').value.trim();
+  
+  const b1Label = document.getElementById('m-b1-label').value.trim();
+  const b1Amt = Number(document.getElementById('m-b1-amt').value);
+  const b2Label = document.getElementById('m-b2-label').value.trim();
+  const b2Amt = Number(document.getElementById('m-b2-amt').value);
+
+  const budget = [];
+  if(b1Amt > 0) budget.push({category: "🏨 Hotel", label: b1Label || "Verblijf", amount: b1Amt});
+  if(b2Amt > 0) budget.push({category: "✈️ Vlucht", label: b2Label || "Transport", amount: b2Amt});
+
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
+  trips[id] = {
+    name: name,
+    destination: dest,
+    status: 'idee',
+    notes: [],
+    checklist: [],
+    budget: budget,
+    guideUrl: guide,
+    createdAt: Date.now()
+  };
+
+  await db.collection('trips').doc(id).set(trips[id]);
+  closeNewTripModal();
+  renderDashboard();
+  openDetail(id);
+}
+
+loadTrips();
+</script>
 </body>
 </html>
