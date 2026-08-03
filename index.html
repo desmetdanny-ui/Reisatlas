@@ -103,6 +103,20 @@
   .trip-card .meta{font-size:12px; color:#5b5140; margin-top:10px; display:flex; gap:14px; flex-wrap:wrap;}
   .trip-card .meta span{display:flex; align-items:center; gap:4px;}
 
+  .trip-card.has-guide{padding-top:32px;}
+  .ribbon{
+    position:absolute; top:0; right:14px;
+    background:var(--teal); color:white;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:5px 12px; border-radius:0 0 6px 6px;
+  }
+  .card-guide-link{
+    display:block; margin-top:12px; text-align:center;
+    background:var(--brass); color:white; text-decoration:none;
+    padding:9px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    letter-spacing:0.5px; text-transform:uppercase;
+  }
+
   .add-trip{
     border:1.5px dashed rgba(231,218,180,0.35);
     border-radius:4px; padding:16px; text-align:center;
@@ -299,14 +313,19 @@ function setSync(ok, text){
 async function loadTrips(){
   if(!firebaseOk){ setSync(false, "Firebase niet geconfigureerd"); renderDashboardFallback(); return; }
   try{
-    const snap = await db.collection('trips').get();
+    let snap = await db.collection('trips').get();
     trips = {};
     snap.forEach(doc => trips[doc.id] = doc.data());
 
-    if(Object.keys(trips).length === 0){
-      await seedAlicante();
-      const snap2 = await db.collection('trips').get();
-      snap2.forEach(doc => trips[doc.id] = doc.data());
+    let needsReload = false;
+    if(!trips['alicante-nov']){ await seedAlicante(); needsReload = true; }
+    if(!trips['aveiro-2026']){ await seedAveiro(); needsReload = true; }
+    if(!trips['lanzarote-2027']){ await seedLanzarote(); needsReload = true; }
+
+    if(needsReload){
+      snap = await db.collection('trips').get();
+      trips = {};
+      snap.forEach(doc => trips[doc.id] = doc.data());
     }
     setSync(true, "gesynct");
     renderDashboard();
@@ -315,6 +334,40 @@ async function loadTrips(){
     setSync(false, "geen verbinding — check config");
     renderDashboardFallback();
   }
+}
+
+async function seedAveiro(){
+  await db.collection('trips').doc('aveiro-2026').set({
+    name: "Aveiro",
+    destination: "Aveiro, Portugal",
+    status: "bevestigd",
+    createdAt: Date.now(),
+    guideUrl: "https://desmetdanny-ui.github.io/Aveiro/",
+    notes: [
+      "15-19 september 2026, Turim Aveiro Palace",
+      "Vluchten SN3809 / SN3812, transfer reservering SD2752910426",
+      "E-biketocht op 16/09 om 09:30, ref. 1426044289"
+    ],
+    checklist: [],
+    budget: []
+  });
+}
+
+async function seedLanzarote(){
+  await db.collection('trips').doc('lanzarote-2027').set({
+    name: "Lanzarote",
+    destination: "Playa Blanca, Lanzarote",
+    status: "bevestigd",
+    createdAt: Date.now(),
+    guideUrl: "https://desmetdanny-ui.github.io/Lanzarote/",
+    notes: [
+      "2-12 januari 2027, H10 Rubicón Horizons Collection",
+      "Privilege All Inclusive",
+      "Vluchten SN3787 / SN3788"
+    ],
+    checklist: [],
+    budget: []
+  });
 }
 
 async function seedAlicante(){
@@ -359,8 +412,10 @@ function renderDashboard(){
     const t = trips[id];
     const st = STATUSES.find(s => s.key === t.status) || STATUSES[0];
     const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+    const hasGuide = !!t.guideUrl;
     return `
-      <div class="trip-card" onclick="openDetail('${id}')">
+      <div class="trip-card ${hasGuide?'has-guide':''}" onclick="openDetail('${id}')">
+        ${hasGuide ? '<div class="ribbon">📖 Volledige gids</div>' : ''}
         <div class="row-top">
           <div>
             <h2>${t.name||'Naamloos'}</h2>
@@ -373,6 +428,7 @@ function renderDashboard(){
           <span>☑ ${(t.checklist||[]).filter(c=>!c.done).length} open</span>
           ${budgetTotal ? `<span>€ ${budgetTotal}</span>` : ''}
         </div>
+        ${hasGuide ? `<a class="card-guide-link" href="${t.guideUrl}" target="_blank" onclick="event.stopPropagation()">→ Open reisgids</a>` : ''}
       </div>`;
   }).join('');
 }
