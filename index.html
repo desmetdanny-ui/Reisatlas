@@ -176,10 +176,25 @@
   .check-item .box.done{background:var(--teal); border-color:var(--teal); color:white;}
   .check-item .txt.done{text-decoration:line-through; opacity:0.5;}
 
-  .budget-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
-  .budget-row.total{font-weight:600; border-bottom:none; padding-top:10px;}
+  /* Budget Management Module CSS */
+  .budget-cards{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;}
+  .budget-card{background:rgba(255,255,255,0.4); padding:8px; border-radius:4px; text-align:center;}
+  .budget-card .lbl{font-size:10px; font-family:'IBM Plex Mono',monospace; color:#5b5140; text-transform:uppercase;}
+  .budget-card .val{font-size:14px; font-weight:600; font-family:'IBM Plex Mono',monospace; margin-top:2px;}
+  .budget-card .val.neg{color:var(--stamp-red);}
+  
+  .budget-progress-bar{height:6px; background:rgba(0,0,0,0.1); border-radius:3px; overflow:hidden; margin-bottom:14px;}
+  .budget-progress-fill{height:100%; background:var(--teal); width:0%; transition:width 0.3s ease;}
+  .budget-progress-fill.over{background:var(--stamp-red);}
 
-  input[type=text], textarea{
+  .budget-row{display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:13px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
+  .budget-row .del{color:var(--stamp-red); font-size:11px; cursor:pointer; margin-left:8px;}
+  .budget-row.total{font-weight:600; border-bottom:none; padding-top:10px; font-size:14px;}
+
+  .target-budget-container{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-family:'IBM Plex Mono',monospace; color:#5b5140; margin-bottom:10px; background:rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px;}
+  .target-budget-container button{background:none; border:none; color:var(--teal); text-decoration:underline; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:11px;}
+
+  input[type=text], input[type=number], textarea{
     width:100%; padding:9px 10px; border-radius:4px; border:1px solid rgba(0,0,0,0.15);
     font-family:'Inter',sans-serif; font-size:14px; background:white; color:var(--ink); margin-bottom:8px;
   }
@@ -270,12 +285,12 @@
       </div>
 
       <div class="section">
-        <h3>Budget</h3>
+        <h3>Budget Beheer</h3>
         <div class="hr"></div>
         <div id="d-budget"></div>
         <div class="inline-add">
-          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Hotel)" style="flex:2;">
-          <input type="text" id="newBudgetAmount" placeholder="€" style="flex:1;">
+          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Vlucht, Hotel, Restaurant)" style="flex:2;">
+          <input type="number" id="newBudgetAmount" placeholder="€" style="flex:1;">
           <button onclick="addBudget()">+</button>
         </div>
       </div>
@@ -288,11 +303,7 @@
 <div class="sync-status"><span class="dot" id="syncDot"></span><span id="syncText">verbinden…</span></div>
 
 <script>
-/* ================= FIREBASE CONFIG =================
-   Vervang onderstaande waarden door je eigen config uit
-   de Firebase Console → wiezen-club project → Project settings
-   → "Your apps" → Web app → SDK setup and configuration.
-   ==================================================== */
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
   authDomain: "wiezen-club.firebaseapp.com",
@@ -374,7 +385,12 @@ async function seedAveiro(){
       "E-biketocht op 16/09 om 09:30, ref. 1426044289"
     ],
     checklist: [],
-    budget: []
+    budget: [
+      {label:"Hotel Turim Aveiro Palace", amount:480},
+      {label:"Vluchten SN3809/3812", amount:320},
+      {label:"Transfers luchthaven", amount:160}
+    ],
+    targetBudget: 1500
   });
 }
 
@@ -391,7 +407,8 @@ async function seedLanzarote(){
       "Vluchten SN3787 / SN3788"
     ],
     checklist: [],
-    budget: []
+    budget: [],
+    targetBudget: 0
   });
 }
 
@@ -421,7 +438,8 @@ async function seedAlicante(){
     budget: [
       {label:"Hotel (4 nachten)", amount:440},
       {label:"Vlucht (2 pers.)", amount:280}
-    ]
+    ],
+    targetBudget: 1000
   });
 }
 
@@ -508,10 +526,58 @@ function renderDetail(){
     </div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen acties</div>';
 
-  const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
-  document.getElementById('d-budget').innerHTML =
-    (t.budget||[]).map(b => `<div class="budget-row"><span>${b.label}</span><span class="mono">€ ${b.amount}</span></div>`).join('')
-    + `<div class="budget-row total"><span>Totaal</span><span class="mono">€ ${budgetTotal}</span></div>`;
+  /* Uitgebreid Budget Beheer */
+  const targetBudget = Number(t.targetBudget || 0);
+  const spentTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+  const remaining = targetBudget - spentTotal;
+  const pct = targetBudget > 0 ? Math.min(Math.round((spentTotal / targetBudget) * 100), 100) : 0;
+  const isOver = targetBudget > 0 && spentTotal > targetBudget;
+
+  let budgetHtml = `
+    <div class="target-budget-container">
+      <span>Richtbudget: <strong>${targetBudget ? '€ ' + targetBudget : 'Niet ingesteld'}</strong></span>
+      <button onclick="setTargetBudget()">[ ${targetBudget ? 'wijzigen' : 'instellen'} ]</button>
+    </div>
+    
+    <div class="budget-cards">
+      <div class="budget-card">
+        <div class="lbl">Budget</div>
+        <div class="val">€ ${targetBudget}</div>
+      </div>
+      <div class="budget-card">
+        <div class="lbl">Gepland</div>
+        <div class="val">€ ${spentTotal}</div>
+      </div>
+      <div class="budget-card">
+        <div class="lbl">Restant</div>
+        <div class="val ${isOver ? 'neg' : ''}">€ ${remaining}</div>
+      </div>
+    </div>
+
+    ${targetBudget > 0 ? `
+      <div class="budget-progress-bar">
+        <div class="budget-progress-fill ${isOver ? 'over' : ''}" style="width: ${pct}%"></div>
+      </div>
+    ` : ''}
+  `;
+
+  if((t.budget||[]).length > 0){
+    budgetHtml += (t.budget||[]).map((b, i) => 
+      `<div class="budget-row">
+        <span>${b.label}</span>
+        <div>
+          <span class="mono">€ ${b.amount}</span>
+          <span class="del" onclick="delBudget(${i})">✕</span>
+        </div>
+      </div>`
+    ).join('');
+  } else {
+    budgetHtml += '<div class="empty" style="padding:10px 0;">Nog geen uitgaven gepland</div>';
+  }
+
+  budgetHtml += `<div class="budget-row total"><span>Totaal Gepland</span><span class="mono">€ ${spentTotal}</span></div>`;
+
+  document.getElementById('d-budget').innerHTML = budgetHtml;
 }
 
 async function saveTrip(){
@@ -564,12 +630,26 @@ function addBudget(){
   saveTrip(); renderDetail();
 }
 
+function delBudget(i){
+  trips[activeTripId].budget.splice(i, 1);
+  saveTrip(); renderDetail();
+}
+
+function setTargetBudget(){
+  const current = trips[activeTripId].targetBudget || 0;
+  const val = prompt("Stel het totale richtbudget in voor deze trip (€):", current);
+  if(val !== null && !isNaN(val)){
+    trips[activeTripId].targetBudget = Number(val);
+    saveTrip(); renderDetail();
+  }
+}
+
 async function openNewTrip(){
   const name = prompt("Naam van de trip (bv. Sicilië):");
   if(!name) return;
   const dest = prompt("Bestemming:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
+  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], targetBudget:0, guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
   renderDashboard();
   openDetail(id);
