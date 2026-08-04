@@ -159,6 +159,8 @@
     display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
   }
   .note-item .del{color:var(--stamp-red); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; flex-shrink:0;}
+  .item-actions{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .edit{color:var(--brass); font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer;}
 
   .hotel-item{
     background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px;
@@ -176,25 +178,10 @@
   .check-item .box.done{background:var(--teal); border-color:var(--teal); color:white;}
   .check-item .txt.done{text-decoration:line-through; opacity:0.5;}
 
-  /* Budget Management Module CSS */
-  .budget-cards{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px;}
-  .budget-card{background:rgba(255,255,255,0.4); padding:8px; border-radius:4px; text-align:center;}
-  .budget-card .lbl{font-size:10px; font-family:'IBM Plex Mono',monospace; color:#5b5140; text-transform:uppercase;}
-  .budget-card .val{font-size:14px; font-weight:600; font-family:'IBM Plex Mono',monospace; margin-top:2px;}
-  .budget-card .val.neg{color:var(--stamp-red);}
-  
-  .budget-progress-bar{height:6px; background:rgba(0,0,0,0.1); border-radius:3px; overflow:hidden; margin-bottom:14px;}
-  .budget-progress-fill{height:100%; background:var(--teal); width:0%; transition:width 0.3s ease;}
-  .budget-progress-fill.over{background:var(--stamp-red);}
+  .budget-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
+  .budget-row.total{font-weight:600; border-bottom:none; padding-top:10px;}
 
-  .budget-row{display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:13px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
-  .budget-row .del{color:var(--stamp-red); font-size:11px; cursor:pointer; margin-left:8px;}
-  .budget-row.total{font-weight:600; border-bottom:none; padding-top:10px; font-size:14px;}
-
-  .target-budget-container{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-family:'IBM Plex Mono',monospace; color:#5b5140; margin-bottom:10px; background:rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px;}
-  .target-budget-container button{background:none; border:none; color:var(--teal); text-decoration:underline; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:11px;}
-
-  input[type=text], input[type=number], textarea{
+  input[type=text], textarea{
     width:100%; padding:9px 10px; border-radius:4px; border:1px solid rgba(0,0,0,0.15);
     font-family:'Inter',sans-serif; font-size:14px; background:white; color:var(--ink); margin-bottom:8px;
   }
@@ -285,12 +272,12 @@
       </div>
 
       <div class="section">
-        <h3>Budget Beheer</h3>
+        <h3>Budget</h3>
         <div class="hr"></div>
         <div id="d-budget"></div>
         <div class="inline-add">
-          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Vlucht, Hotel, Restaurant)" style="flex:2;">
-          <input type="number" id="newBudgetAmount" placeholder="€" style="flex:1;">
+          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Hotel)" style="flex:2;">
+          <input type="text" id="newBudgetAmount" placeholder="€" style="flex:1;">
           <button onclick="addBudget()">+</button>
         </div>
       </div>
@@ -303,7 +290,11 @@
 <div class="sync-status"><span class="dot" id="syncDot"></span><span id="syncText">verbinden…</span></div>
 
 <script>
-/* ================= FIREBASE CONFIG ================= */
+/* ================= FIREBASE CONFIG =================
+   Vervang onderstaande waarden door je eigen config uit
+   de Firebase Console → wiezen-club project → Project settings
+   → "Your apps" → Web app → SDK setup and configuration.
+   ==================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyC399MvSiF3PWF_ZTdFr0UqaoC6Fo7WsrY",
   authDomain: "wiezen-club.firebaseapp.com",
@@ -385,12 +376,7 @@ async function seedAveiro(){
       "E-biketocht op 16/09 om 09:30, ref. 1426044289"
     ],
     checklist: [],
-    budget: [
-      {label:"Hotel Turim Aveiro Palace", amount:480},
-      {label:"Vluchten SN3809/3812", amount:320},
-      {label:"Transfers luchthaven", amount:160}
-    ],
-    targetBudget: 1500
+    budget: []
   });
 }
 
@@ -407,8 +393,7 @@ async function seedLanzarote(){
       "Vluchten SN3787 / SN3788"
     ],
     checklist: [],
-    budget: [],
-    targetBudget: 0
+    budget: []
   });
 }
 
@@ -438,8 +423,7 @@ async function seedAlicante(){
     budget: [
       {label:"Hotel (4 nachten)", amount:440},
       {label:"Vlucht (2 pers.)", amount:280}
-    ],
-    targetBudget: 1000
+    ]
   });
 }
 
@@ -512,72 +496,25 @@ function renderDetail(){
   }
 
   document.getElementById('d-hotels').innerHTML = (t.hotels||[]).map((h,i) =>
-    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="del" onclick="delHotel(${i})">verwijder</span></div>`
+    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions"><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen hotel gekozen</div>';
 
   document.getElementById('d-notes').innerHTML = (t.notes||[]).map((n,i) =>
-    `<div class="note-item"><span>${n}</span><span class="del" onclick="delNote(${i})">verwijder</span></div>`
+    `<div class="note-item"><span>${n}</span><span class="item-actions"><span class="edit" onclick="editNote(${i})">✎</span><span class="del" onclick="delNote(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen notities</div>';
 
   document.getElementById('d-checklist').innerHTML = (t.checklist||[]).map((c,i) =>
     `<div class="check-item">
       <div class="box ${c.done?'done':''}" onclick="toggleCheck(${i})">${c.done?'✓':''}</div>
-      <span class="txt ${c.done?'done':''}">${c.text}</span>
+      <span class="txt ${c.done?'done':''}" style="flex:1;">${c.text}</span>
+      <span class="edit" onclick="editCheck(${i})">✎</span>
     </div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen acties</div>';
 
-  /* Uitgebreid Budget Beheer */
-  const targetBudget = Number(t.targetBudget || 0);
-  const spentTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
-  const remaining = targetBudget - spentTotal;
-  const pct = targetBudget > 0 ? Math.min(Math.round((spentTotal / targetBudget) * 100), 100) : 0;
-  const isOver = targetBudget > 0 && spentTotal > targetBudget;
-
-  let budgetHtml = `
-    <div class="target-budget-container">
-      <span>Richtbudget: <strong>${targetBudget ? '€ ' + targetBudget : 'Niet ingesteld'}</strong></span>
-      <button onclick="setTargetBudget()">[ ${targetBudget ? 'wijzigen' : 'instellen'} ]</button>
-    </div>
-    
-    <div class="budget-cards">
-      <div class="budget-card">
-        <div class="lbl">Budget</div>
-        <div class="val">€ ${targetBudget}</div>
-      </div>
-      <div class="budget-card">
-        <div class="lbl">Gepland</div>
-        <div class="val">€ ${spentTotal}</div>
-      </div>
-      <div class="budget-card">
-        <div class="lbl">Restant</div>
-        <div class="val ${isOver ? 'neg' : ''}">€ ${remaining}</div>
-      </div>
-    </div>
-
-    ${targetBudget > 0 ? `
-      <div class="budget-progress-bar">
-        <div class="budget-progress-fill ${isOver ? 'over' : ''}" style="width: ${pct}%"></div>
-      </div>
-    ` : ''}
-  `;
-
-  if((t.budget||[]).length > 0){
-    budgetHtml += (t.budget||[]).map((b, i) => 
-      `<div class="budget-row">
-        <span>${b.label}</span>
-        <div>
-          <span class="mono">€ ${b.amount}</span>
-          <span class="del" onclick="delBudget(${i})">✕</span>
-        </div>
-      </div>`
-    ).join('');
-  } else {
-    budgetHtml += '<div class="empty" style="padding:10px 0;">Nog geen uitgaven gepland</div>';
-  }
-
-  budgetHtml += `<div class="budget-row total"><span>Totaal Gepland</span><span class="mono">€ ${spentTotal}</span></div>`;
-
-  document.getElementById('d-budget').innerHTML = budgetHtml;
+  const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+  document.getElementById('d-budget').innerHTML =
+    (t.budget||[]).map((b,i) => `<div class="budget-row"><span>${b.label}</span><span style="display:flex; align-items:center; gap:8px;"><span class="mono">€ ${b.amount}</span><span class="edit" onclick="editBudget(${i})">✎</span><span class="del" onclick="delBudget(${i})">verwijder</span></span></div>`).join('')
+    + `<div class="budget-row total"><span>Totaal</span><span class="mono">€ ${budgetTotal}</span></div>`;
 }
 
 async function saveTrip(){
@@ -597,6 +534,23 @@ function addHotel(){
 }
 function delHotel(i){ trips[activeTripId].hotels.splice(i,1); saveTrip(); renderDetail(); }
 
+function editHotel(i){
+  const h = trips[activeTripId].hotels[i];
+  const name = prompt("Naam hotel:", h.name);
+  if(name === null) return;
+  const url = prompt("Link:", h.url);
+  if(url === null) return;
+  trips[activeTripId].hotels[i] = {name: name.trim(), url: url.trim()};
+  saveTrip(); renderDetail();
+}
+
+function editNote(i){
+  const current = trips[activeTripId].notes[i];
+  const val = prompt("Notitie aanpassen:", current);
+  if(val === null || !val.trim()) return;
+  trips[activeTripId].notes[i] = val.trim();
+  saveTrip(); renderDetail();
+}
 function addNote(){
   const inp = document.getElementById('newNote');
   if(!inp.value.trim()) return;
@@ -619,6 +573,13 @@ function toggleCheck(i){
   trips[activeTripId].checklist[i].done = !trips[activeTripId].checklist[i].done;
   saveTrip(); renderDetail();
 }
+function editCheck(i){
+  const current = trips[activeTripId].checklist[i].text;
+  const val = prompt("Actie aanpassen:", current);
+  if(val === null || !val.trim()) return;
+  trips[activeTripId].checklist[i].text = val.trim();
+  saveTrip(); renderDetail();
+}
 
 function addBudget(){
   const l = document.getElementById('newBudgetLabel');
@@ -629,27 +590,23 @@ function addBudget(){
   l.value=''; a.value='';
   saveTrip(); renderDetail();
 }
-
-function delBudget(i){
-  trips[activeTripId].budget.splice(i, 1);
+function editBudget(i){
+  const b = trips[activeTripId].budget[i];
+  const label = prompt("Post:", b.label);
+  if(label === null) return;
+  const amount = prompt("Bedrag (€):", b.amount);
+  if(amount === null || isNaN(Number(amount))) return;
+  trips[activeTripId].budget[i] = {label: label.trim(), amount: Number(amount)};
   saveTrip(); renderDetail();
 }
-
-function setTargetBudget(){
-  const current = trips[activeTripId].targetBudget || 0;
-  const val = prompt("Stel het totale richtbudget in voor deze trip (€):", current);
-  if(val !== null && !isNaN(val)){
-    trips[activeTripId].targetBudget = Number(val);
-    saveTrip(); renderDetail();
-  }
-}
+function delBudget(i){ trips[activeTripId].budget.splice(i,1); saveTrip(); renderDetail(); }
 
 async function openNewTrip(){
   const name = prompt("Naam van de trip (bv. Sicilië):");
   if(!name) return;
   const dest = prompt("Bestemming:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], targetBudget:0, guideUrl:"", createdAt:Date.now()};
+  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
   renderDashboard();
   openDetail(id);
