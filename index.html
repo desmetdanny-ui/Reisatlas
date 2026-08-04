@@ -162,6 +162,29 @@
   .item-actions{display:flex; align-items:center; gap:10px; flex-shrink:0;}
   .edit{color:var(--brass); font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer;}
 
+  .day-card{
+    background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .day-date{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--teal); font-weight:600;
+    white-space:nowrap; padding-top:2px; flex-shrink:0; text-transform:capitalize;
+  }
+  .day-body{flex:1;}
+  .day-title{font-weight:600; font-size:14px;}
+  .day-line{font-size:12.5px; color:#5b5140; margin-top:2px;}
+
+  .guide-preview-btn{
+    display:block; width:100%; margin-top:14px; background:var(--teal); color:white; border:none;
+    border-radius:4px; padding:12px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+    letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+  }
+
+  .gp-day{border-left:2px solid var(--teal); padding:4px 0 18px 16px; margin-left:4px;}
+  .gp-date{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--teal); font-weight:600; text-transform:capitalize;}
+  .gp-day h3{font-size:19px; font-style:italic; margin-top:2px;}
+  .gp-line{font-size:13.5px; color:#5b5140; margin-top:4px;}
+
   .hotel-item{
     background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px;
     display:flex; justify-content:space-between; align-items:center; gap:10px;
@@ -282,6 +305,26 @@
         </div>
       </div>
 
+      <div class="section">
+        <h3>Dagindeling (reisgids)</h3>
+        <div class="hr"></div>
+        <div id="d-guidedays"></div>
+        <div class="inline-add">
+          <button class="add-btn" style="width:100%;" onclick="addGuideDay()">+ dag toevoegen</button>
+        </div>
+        <button class="guide-preview-btn" onclick="openGuidePreview()">📖 Bekijk reisgids</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GUIDE PREVIEW -->
+  <div id="guidePreview" class="detail">
+    <button class="back-btn" onclick="closeGuidePreview()">← terug naar trip</button>
+    <div class="page">
+      <h2 id="gp-name">—</h2>
+      <div class="dest-line" id="gp-dest">—</div>
+      <div id="gp-days" style="margin-top:20px;"></div>
     </div>
   </div>
 
@@ -496,7 +539,7 @@ function renderDetail(){
   }
 
   document.getElementById('d-hotels').innerHTML = (t.hotels||[]).map((h,i) =>
-    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions"><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
+    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions"><span class="edit" onclick="addGuideDayFromHotel(${i})" title="toevoegen aan gids">📖</span><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen hotel gekozen</div>';
 
   document.getElementById('d-notes').innerHTML = (t.notes||[]).map((n,i) =>
@@ -515,6 +558,23 @@ function renderDetail(){
   document.getElementById('d-budget').innerHTML =
     (t.budget||[]).map((b,i) => `<div class="budget-row"><span>${b.label}</span><span style="display:flex; align-items:center; gap:8px;"><span class="mono">€ ${b.amount}</span><span class="edit" onclick="editBudget(${i})">✎</span><span class="del" onclick="delBudget(${i})">verwijder</span></span></div>`).join('')
     + `<div class="budget-row total"><span>Totaal</span><span class="mono">€ ${budgetTotal}</span></div>`;
+
+  const sortedDays = (t.guideDays||[]).map((d,origIdx)=>({...d, origIdx})).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  document.getElementById('d-guidedays').innerHTML = sortedDays.map(d => `
+    <div class="day-card">
+      <div class="day-date">${d.date ? formatDateNl(d.date) : 'geen datum'}</div>
+      <div class="day-body">
+        <div class="day-title">${d.title||''}</div>
+        ${d.transport ? `<div class="day-line">🚌 ${d.transport}</div>` : ''}
+        ${d.cost ? `<div class="day-line">€ ${d.cost}</div>` : ''}
+        ${d.notes ? `<div class="day-line">${d.notes}</div>` : ''}
+      </div>
+      <span class="item-actions" style="align-self:flex-start;">
+        <span class="edit" onclick="editGuideDay(${d.origIdx})">✎</span>
+        <span class="del" onclick="delGuideDay(${d.origIdx})">verwijder</span>
+      </span>
+    </div>
+  `).join('') || '<div class="empty" style="padding:14px 0;">Nog geen dagen toegevoegd</div>';
 }
 
 async function saveTrip(){
@@ -532,7 +592,7 @@ function addHotel(){
   n.value=''; u.value='';
   saveTrip(); renderDetail();
 }
-function delHotel(i){ trips[activeTripId].hotels.splice(i,1); saveTrip(); renderDetail(); }
+function delHotel(i){ if(!confirm("Dit hotel verwijderen?")) return; trips[activeTripId].hotels.splice(i,1); saveTrip(); renderDetail(); }
 
 function editHotel(i){
   const h = trips[activeTripId].hotels[i];
@@ -559,7 +619,7 @@ function addNote(){
   inp.value = '';
   saveTrip(); renderDetail();
 }
-function delNote(i){ trips[activeTripId].notes.splice(i,1); saveTrip(); renderDetail(); }
+function delNote(i){ if(!confirm("Deze notitie verwijderen?")) return; trips[activeTripId].notes.splice(i,1); saveTrip(); renderDetail(); }
 
 function addCheck(){
   const inp = document.getElementById('newCheck');
@@ -599,7 +659,75 @@ function editBudget(i){
   trips[activeTripId].budget[i] = {label: label.trim(), amount: Number(amount)};
   saveTrip(); renderDetail();
 }
-function delBudget(i){ trips[activeTripId].budget.splice(i,1); saveTrip(); renderDetail(); }
+function delBudget(i){ if(!confirm("Deze budgetpost verwijderen?")) return; trips[activeTripId].budget.splice(i,1); saveTrip(); renderDetail(); }
+
+function formatDateNl(iso){
+  try{
+    const d = new Date(iso+'T12:00:00');
+    return d.toLocaleDateString('nl-BE', {weekday:'short', day:'numeric', month:'short'});
+  }catch(e){ return iso; }
+}
+
+function addGuideDay(){
+  const date = prompt("Datum (JJJJ-MM-DD), bv. 2026-11-12:");
+  if(date === null || !date.trim()) return;
+  const title = prompt("Titel (bv. Dagtrip Benidorm):") || "";
+  const transport = prompt("Vervoer (bv. TRAM lijn 1):") || "";
+  const cost = prompt("Kostprijs (€):") || "";
+  const notes = prompt("Extra notities:") || "";
+  trips[activeTripId].guideDays = trips[activeTripId].guideDays || [];
+  trips[activeTripId].guideDays.push({date:date.trim(), title:title.trim(), transport:transport.trim(), cost:cost.trim(), notes:notes.trim()});
+  saveTrip(); renderDetail();
+}
+
+function addGuideDayFromHotel(i){
+  const h = trips[activeTripId].hotels[i];
+  const date = prompt("Aankomstdatum hotel (JJJJ-MM-DD):");
+  if(date === null || !date.trim()) return;
+  trips[activeTripId].guideDays = trips[activeTripId].guideDays || [];
+  trips[activeTripId].guideDays.push({date:date.trim(), title:"Aankomst & inchecken", transport:"", cost:"", notes:h.name});
+  saveTrip(); renderDetail();
+}
+
+function editGuideDay(i){
+  const d = trips[activeTripId].guideDays[i];
+  const date = prompt("Datum (JJJJ-MM-DD):", d.date);
+  if(date === null) return;
+  const title = prompt("Titel:", d.title);
+  if(title === null) return;
+  const transport = prompt("Vervoer:", d.transport);
+  if(transport === null) return;
+  const cost = prompt("Kostprijs (€):", d.cost);
+  if(cost === null) return;
+  const notes = prompt("Extra notities:", d.notes);
+  if(notes === null) return;
+  trips[activeTripId].guideDays[i] = {date:date.trim(), title:title.trim(), transport:transport.trim(), cost:cost.trim(), notes:notes.trim()};
+  saveTrip(); renderDetail();
+}
+function delGuideDay(i){ if(!confirm("Deze dag verwijderen?")) return; trips[activeTripId].guideDays.splice(i,1); saveTrip(); renderDetail(); }
+
+function openGuidePreview(){
+  const t = trips[activeTripId];
+  document.getElementById('gp-name').textContent = t.name || 'Naamloos';
+  document.getElementById('gp-dest').textContent = t.destination || '';
+  const sortedDays = (t.guideDays||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  document.getElementById('gp-days').innerHTML = sortedDays.map(d => `
+    <div class="gp-day">
+      <div class="gp-date">${d.date ? formatDateNl(d.date) : 'geen datum'}</div>
+      <h3>${d.title||''}</h3>
+      ${d.transport ? `<div class="gp-line">🚌 ${d.transport}</div>` : ''}
+      ${d.cost ? `<div class="gp-line">€ ${d.cost}</div>` : ''}
+      ${d.notes ? `<div class="gp-line">${d.notes}</div>` : ''}
+    </div>
+  `).join('') || '<div class="empty" style="padding:30px 0;">Nog geen dagen — voeg er eerst toe bij "Dagindeling".</div>';
+
+  document.getElementById('detail').classList.remove('active');
+  document.getElementById('guidePreview').classList.add('active');
+}
+function closeGuidePreview(){
+  document.getElementById('guidePreview').classList.remove('active');
+  document.getElementById('detail').classList.add('active');
+}
 
 async function openNewTrip(){
   const name = prompt("Naam van de trip (bv. Sicilië):");
