@@ -275,6 +275,18 @@
       </div>
 
       <div class="section">
+        <h3>Bevestigingen</h3>
+        <div class="hr"></div>
+        <div id="d-confirmations"></div>
+        <div class="inline-add">
+          <input type="text" id="newConfirmName" placeholder="Naam (bv. vluchtticket)" style="flex:2;">
+          <input type="text" id="newConfirmUrl" placeholder="Link (Google Drive, e-mail…)" style="flex:2;">
+          <button onclick="addConfirmation()">+</button>
+        </div>
+        <div style="font-size:11px; color:#5b5140; margin-top:6px; font-family:'IBM Plex Mono',monospace; line-height:1.5;">Foto/screenshot op Google Drive zetten, delen ("Iedereen met de link"), link hier plakken.</div>
+      </div>
+
+      <div class="section">
         <h3>Losse ideeën &amp; notities</h3>
         <div class="hr"></div>
         <div id="d-notes"></div>
@@ -542,6 +554,10 @@ function renderDetail(){
     `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions"><span class="edit" onclick="addGuideDayFromHotel(${i})" title="toevoegen aan gids">📖</span><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen hotel gekozen</div>';
 
+  document.getElementById('d-confirmations').innerHTML = (t.confirmations||[]).map((c,i) =>
+    `<div class="hotel-item"><a href="${c.url}" target="_blank">📎 ${c.name || c.url}</a><span class="item-actions"><span class="del" onclick="delConfirmation(${i})">verwijder</span></span></div>`
+  ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen bevestigingen gekoppeld</div>';
+
   document.getElementById('d-notes').innerHTML = (t.notes||[]).map((n,i) =>
     `<div class="note-item"><span>${n}</span><span class="item-actions"><span class="edit" onclick="editNote(${i})">✎</span><span class="del" onclick="delNote(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen notities</div>';
@@ -601,6 +617,30 @@ function editHotel(i){
   const url = prompt("Link:", h.url);
   if(url === null) return;
   trips[activeTripId].hotels[i] = {name: name.trim(), url: url.trim()};
+  saveTrip(); renderDetail();
+}
+
+/* ============================================================
+   BEVESTIGINGEN
+   Links naar vluchttickets, transferbevestigingen, verzekering,
+   tickets, enz. Geen eigen bestandsopslag (dat vraagt om Firebase
+   Storage op het betaalplan) - gewoon een linkje, bv. naar een
+   gedeelde foto/screenshot op Google Drive.
+   ============================================================ */
+function addConfirmation(){
+  const n = document.getElementById('newConfirmName');
+  const u = document.getElementById('newConfirmUrl');
+  const name = n.value.trim();
+  const url = u.value.trim();
+  if(!url) return;
+  trips[activeTripId].confirmations = trips[activeTripId].confirmations || [];
+  trips[activeTripId].confirmations.push({name, url});
+  n.value=''; u.value='';
+  saveTrip(); renderDetail();
+}
+function delConfirmation(i){
+  if(!confirm("Deze bevestiging verwijderen?")) return;
+  trips[activeTripId].confirmations.splice(i,1);
   saveTrip(); renderDetail();
 }
 
