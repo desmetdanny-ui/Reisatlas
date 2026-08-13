@@ -281,7 +281,7 @@
         <div id="d-confirmations"></div>
         <div class="inline-add">
           <input type="text" id="newConfirmName" placeholder="Naam (bv. vluchtticket)" style="flex:2;">
-          <label style="background:var(--teal); color:white; border:none; border-radius:4px; padding:9px 14px; font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; display:flex; align-items:center; white-space:nowrap;">📷 Kies foto<input type="file" accept="image/*" id="newConfirmFile" style="display:none;" onchange="handleConfirmationFile()"></label>
+          <label style="background:var(--teal); color:white; border:none; border-radius:4px; padding:9px 14px; font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; display:flex; align-items:center; white-space:nowrap;">📷 Kies bestand<input type="file" accept="image/*,application/pdf" id="newConfirmFile" style="display:none;" onchange="handleConfirmationFile()"></label>
         </div>
         <div class="inline-add">
           <input type="text" id="newConfirmUrl" placeholder="Of plak zelf een link (Google Drive...)" style="flex:2;">
@@ -399,6 +399,13 @@ function compressImage(file, maxDim, quality){
 }
 async function uploadBevestigingFoto(file, pad){
   if (!storage) throw new Error('Storage niet beschikbaar');
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (isPdf){
+    const bestandsnaam = pad + '_' + Date.now() + '.pdf';
+    const ref = storage.ref().child('bevestigingen/' + bestandsnaam);
+    await ref.put(file, {contentType:'application/pdf'});
+    return await ref.getDownloadURL();
+  }
   let blob = await compressImage(file, 1600, 0.72);
   if (blob.size > 900000){ blob = await compressImage(file, 1200, 0.55); }
   const bestandsnaam = pad + '_' + Date.now() + '.jpg';
