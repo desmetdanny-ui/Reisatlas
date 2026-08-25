@@ -257,6 +257,7 @@
     <div class="page">
       <h2 id="d-name">—</h2>
       <div class="dest-line" id="d-dest">—</div>
+      <div class="dest-line" id="d-dates" style="margin-top:6px; font-size:13px;">—</div>
 
       <div class="status-picker" id="d-status"></div>
 
@@ -467,6 +468,8 @@ async function seedAveiro(){
     name: "Aveiro",
     destination: "Aveiro, Portugal",
     status: "bevestigd",
+    startDate: "2026-09-15",
+    endDate: "2026-09-19",
     createdAt: Date.now(),
     guideUrl: "https://desmetdanny-ui.github.io/Aveiro/",
     notes: [
@@ -484,6 +487,8 @@ async function seedLanzarote(){
     name: "Lanzarote",
     destination: "Playa Blanca, Lanzarote",
     status: "bevestigd",
+    startDate: "2027-01-02",
+    endDate: "2027-01-12",
     createdAt: Date.now(),
     guideUrl: "https://desmetdanny-ui.github.io/Lanzarote/",
     notes: [
@@ -500,27 +505,28 @@ async function seedAlicante(){
   await db.collection('trips').doc('alicante-nov').set({
     name: "Alicante",
     destination: "Alicante, Spanje",
-    status: "idee",
+    status: "planning",
+    startDate: "2026-11-10",
+    endDate: "2026-11-13",
     createdAt: Date.now(),
     guideUrl: "",
     notes: [
-      "4 nachten in november, 2 personen — nog niet zeker of we gaan",
-      "Ontbijt niet inbegrepen (+/- €12 pp/dag)",
-      "Budget hotel: max €500 voor 4 nachten",
-      "Vlucht vanuit Zaventem (BRU), niet Charleroi — Brussels Airlines/Vueling/Transavia, ca. €110-160 pp retour met enkel handbagage",
-      "Dagtrip gepland met TRAM lijn 1 naar Benidorm — vertrek Mercado/Luceros, ±1u10 reistijd, langs de kust"
+      "Aankomst dinsdag 10 nov 2026, vertrek vrijdag 13 nov 2026 — 3 nachten, eerste dinsdag na de herfstvakantie",
+      "Hotel Les Monges Palace Boutique op proef — als het bevalt vast hotel voor Alicante",
+      "Vast romantisch restaurant nog te kiezen — kandidaten: Koinè Bistró (Calle Bazán 45, ±400m), The Velvet Fork (±800-900m), La Callaíta Gastro Bar (San Ildefonso 14, ±400m) — alle drie op wandelafstand van het hotel",
+      "1 dag naar Benidorm met de trein/tram (lijn 1 vanuit Alicante, ±1u10, langs de kust)"
     ],
     hotels: [
-      {name: "Les Monges Palace Boutique — Double room, 10-14 nov, €440", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-14&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261114&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}
+      {name: "Les Monges Palace Boutique — C/ de Sant Agustí 4, op proef, 10-13 nov (3 nachten)", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-13&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261113&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}
     ],
     checklist: [
-      {text:"Datum ooglidcorrectie Martine kennen", done:false},
-      {text:"Hotel Les Monges Palace definitief bevestigen", done:false},
+      {text:"Vast restaurant kiezen tussen Koinè Bistró, The Velvet Fork en La Callaíta", done:false},
+      {text:"Hotel Les Monges Palace definitief bevestigen (3 nachten, 10-13 nov)", done:false},
       {text:"Vlucht boeken (Zaventem, handbagage)", done:false},
-      {text:"TRAM-tickets Benidorm bekijken (dag zelf te koop)", done:false}
+      {text:"Trein/tram-tickets Benidorm bekijken (dag zelf te koop)", done:false}
     ],
     budget: [
-      {label:"Hotel (4 nachten)", amount:440},
+      {label:"Hotel (3 nachten)", amount:330},
       {label:"Vlucht (2 pers.)", amount:280}
     ]
   });
@@ -553,6 +559,7 @@ function renderDashboard(){
           <div class="stamp ${t.status}">${st.label}</div>
         </div>
         <div class="meta">
+          ${(t.startDate||t.endDate) ? `<span>📅 ${formatDateRangeNl(t.startDate, t.endDate)}</span>` : ''}
           <span>📝 ${(t.notes||[]).length} idee${(t.notes||[]).length===1?'':'ën'}</span>
           <span>☑ ${(t.checklist||[]).filter(c=>!c.done).length} open</span>
           ${budgetTotal ? `<span>€ ${budgetTotal}</span>` : ''}
@@ -579,8 +586,12 @@ function closeDetail(){
 
 function renderDetail(){
   const t = trips[activeTripId];
-  document.getElementById('d-name').textContent = t.name || 'Naamloos';
-  document.getElementById('d-dest').textContent = t.destination || '';
+  document.getElementById('d-name').innerHTML =
+    `${t.name || 'Naamloos'} <span class="edit" style="font-size:14px; vertical-align:middle;" onclick="editName()">✎</span>`;
+  document.getElementById('d-dest').innerHTML =
+    `${t.destination || ''} <span class="edit" onclick="editDestination()">✎</span>`;
+  document.getElementById('d-dates').innerHTML =
+    `📅 ${formatDateRangeNl(t.startDate, t.endDate) || 'nog geen data'} <span class="edit" onclick="editDates()">✎</span>`;
 
   document.getElementById('d-status').innerHTML = STATUSES.map(s =>
     `<button class="${s.key===t.status?'active':''}" onclick="setStatus('${s.key}')">${s.label}</button>`
@@ -642,6 +653,37 @@ async function saveTrip(){
 }
 
 function setStatus(key){ trips[activeTripId].status = key; saveTrip(); renderDetail(); }
+
+function editName(){
+  const val = prompt("Naam van de trip:", trips[activeTripId].name || "");
+  if(val === null || !val.trim()) return;
+  trips[activeTripId].name = val.trim();
+  saveTrip(); renderDetail(); renderDashboard();
+}
+function editDestination(){
+  const val = prompt("Bestemming:", trips[activeTripId].destination || "");
+  if(val === null) return;
+  trips[activeTripId].destination = val.trim();
+  saveTrip(); renderDetail(); renderDashboard();
+}
+function editDates(){
+  const start = prompt("Vertrekdatum (JJJJ-MM-DD):", trips[activeTripId].startDate || "");
+  if(start === null) return;
+  const end = prompt("Einddatum (JJJJ-MM-DD):", trips[activeTripId].endDate || "");
+  if(end === null) return;
+  trips[activeTripId].startDate = start.trim();
+  trips[activeTripId].endDate = end.trim();
+  saveTrip(); renderDetail(); renderDashboard();
+}
+function formatDateRangeNl(start, end){
+  if(!start && !end) return '';
+  const fmt = (iso) => {
+    try{ return new Date(iso+'T12:00:00').toLocaleDateString('nl-BE', {weekday:'short', day:'numeric', month:'short', year:'numeric'}); }
+    catch(e){ return iso; }
+  };
+  if(start && end) return `${fmt(start)} → ${fmt(end)}`;
+  return fmt(start || end);
+}
 
 function addHotel(){
   const n = document.getElementById('newHotelName');
@@ -837,8 +879,10 @@ async function openNewTrip(){
   const name = prompt("Naam van de trip (bv. Sicilië):");
   if(!name) return;
   const dest = prompt("Bestemming:") || "";
+  const start = prompt("Vertrekdatum (JJJJ-MM-DD), mag later ingevuld worden:") || "";
+  const end = prompt("Einddatum (JJJJ-MM-DD), mag later ingevuld worden:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {name, destination:dest, status:'idee', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
+  trips[id] = {name, destination:dest, status:'idee', startDate:start.trim(), endDate:end.trim(), notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
   renderDashboard();
   openDetail(id);
