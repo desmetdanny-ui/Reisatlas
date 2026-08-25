@@ -479,11 +479,32 @@ async function loadTrips(){
 
     let needsReload = false;
     if(!trips['alicante-nov']){ await seedAlicante(); needsReload = true; }
-    else if(!trips['alicante-nov'].hotels){
-      await db.collection('trips').doc('alicante-nov').update({
-        hotels: [{name: "Les Monges Palace Boutique — Double room, 10-14 nov, €440", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-14&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261114&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}]
-      });
-      needsReload = true;
+    else{
+      const a = trips['alicante-nov'];
+      const updates = {};
+      if(!a.hotels){
+        updates.hotels = [{name: "Les Monges Palace Boutique — Double room, 10-14 nov, €440", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-14&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261114&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}];
+      }
+      const hasFilledRestaurantPlan = a.restaurantPlan && a.restaurantPlan['2026-11-12'] && a.restaurantPlan['2026-11-12'].dinner && a.restaurantPlan['2026-11-12'].dinner.name;
+      if(!hasFilledRestaurantPlan){
+        updates.restaurantPlan = {
+          "2026-11-10": {lunch:{name:'El Loco del Mar (Mercado Central)',price:'',url:'https://www.google.com/maps/place/?q=place_id:ChIJaRZ5Bi43Yg0R0xMMfdXh1mw'}, dinner:{name:'The Velvet Fork',price:'',url:'https://www.thefork.es/restaurante/the-velvet-fork-r832598'}},
+          "2026-11-11": {lunch:{name:'Lunch in Benidorm (ter plekke)',price:'',url:''}, dinner:{name:'La Callaíta Gastro Bar',price:'',url:'https://www.restaurantelacallaita.es/'}},
+          "2026-11-12": {lunch:{name:'',price:'',url:''}, dinner:{name:'Koinè Bistró',price:'',url:'https://koine-bistro.es/en/reservas/'}},
+          "2026-11-13": {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}}
+        };
+      }
+      const hasBenidormDay = (a.guideDays||[]).some(d => d.date === '2026-11-11' && d.title === 'Dagtrip Benidorm');
+      if(!hasBenidormDay){
+        updates.guideDays = [
+          ...(a.guideDays||[]),
+          {date:'2026-11-11', title:'Dagtrip Benidorm', transport:'TRAM lijn 1 vanaf Luceros, ±1u10-1u20, €2,80 enkel', cost:'', notes:'🧭 Route naar station Luceros: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · 🕐 Uurregeling: https://www.tramalacant.es · 🚕 Verplaatsingen in Benidorm zelf met Uber'}
+        ];
+      }
+      if(Object.keys(updates).length){
+        await db.collection('trips').doc('alicante-nov').update(updates);
+        needsReload = true;
+      }
     }
     if(!trips['aveiro-2026']){ await seedAveiro(); needsReload = true; }
     if(!trips['lanzarote-2027']){ await seedLanzarote(); needsReload = true; }
