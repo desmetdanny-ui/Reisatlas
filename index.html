@@ -781,8 +781,8 @@ function syncRestaurantDays(t){
     const iso = cur.toISOString().slice(0,10);
     if(!t.restaurantPlan[iso]){
       t.restaurantPlan[iso] = {
-        lunch: {name:'', price:'', url:''},
-        dinner: {name:'', price:'', url:''}
+        lunch: {name:'', price:'', url:'', menuUrl:'', rating:'', review:''},
+        dinner: {name:'', price:'', url:'', menuUrl:'', rating:'', review:''}
       };
     }
     cur.setDate(cur.getDate()+1);
@@ -801,16 +801,21 @@ function renderRestaurants(){
   el.innerHTML = dates.map(iso => {
     const day = t.restaurantPlan[iso];
     const mealRow = (meal, label) => {
-      const m = day[meal] || {name:'',price:'',url:''};
+      const m = day[meal] || {name:'',price:'',url:'',menuUrl:'',rating:'',review:''};
       const body = m.name
         ? `${m.url ? `<a href="${m.url}" target="_blank">${m.name}</a>` : m.name}`
         : `<span class="rm-empty">nog niet gekozen</span>`;
+      const extras = [];
+      if(m.menuUrl) extras.push(`<a href="${m.menuUrl}" target="_blank" style="color:var(--brass); font-weight:600;">📋 menu</a>`);
+      if(m.rating) extras.push(`<span class="rm-price">⭐ ${m.rating}/10</span>`);
       return `
-        <div class="rest-meal">
+        <div class="rest-meal" style="flex-wrap:wrap;">
           <span class="rm-label">${label}</span>
           <span class="rm-body">${body}</span>
           ${m.price ? `<span class="rm-price">€ ${m.price}</span>` : ''}
+          ${extras.join('')}
           <span class="edit" onclick="editMeal('${iso}','${meal}')">✎</span>
+          ${m.review ? `<div style="flex-basis:100%; font-size:12.5px; color:#5b5140; font-style:italic; margin-top:2px;">"${m.review}"</div>` : ''}
         </div>`;
     };
     return `
@@ -825,15 +830,24 @@ function renderRestaurants(){
 function editMeal(iso, meal){
   const t = trips[activeTripId];
   t.restaurantPlan = t.restaurantPlan || {};
-  t.restaurantPlan[iso] = t.restaurantPlan[iso] || {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}};
-  const m = t.restaurantPlan[iso][meal] || {name:'',price:'',url:''};
+  t.restaurantPlan[iso] = t.restaurantPlan[iso] || {lunch:{name:'',price:'',url:'',menuUrl:'',rating:'',review:''}, dinner:{name:'',price:'',url:'',menuUrl:'',rating:'',review:''}};
+  const m = t.restaurantPlan[iso][meal] || {name:'',price:'',url:'',menuUrl:'',rating:'',review:''};
   const name = prompt((meal==='lunch'?"Lunch":"Diner") + " — naam restaurant:", m.name);
   if(name === null) return;
   const price = prompt("Kostprijs (€):", m.price);
   if(price === null) return;
-  const url = prompt("Link naar restaurant:", m.url);
+  const url = prompt("Link naar website/reservering:", m.url);
   if(url === null) return;
-  t.restaurantPlan[iso][meal] = {name: name.trim(), price: price.trim(), url: url.trim()};
+  const menuUrl = prompt("Link naar menu (indien apart):", m.menuUrl || '');
+  if(menuUrl === null) return;
+  const rating = prompt("Beoordeling (0-10):", m.rating || '');
+  if(rating === null) return;
+  const review = prompt("Wat vonden jullie ervan?", m.review || '');
+  if(review === null) return;
+  t.restaurantPlan[iso][meal] = {
+    name: name.trim(), price: price.trim(), url: url.trim(),
+    menuUrl: menuUrl.trim(), rating: rating.trim(), review: review.trim()
+  };
   saveTrip(); renderRestaurants();
 }
 
@@ -1059,7 +1073,9 @@ function openGuidePreview(){
           if(m && m.name){
             const label = meal === 'lunch' ? '🍽️ Lunch' : '🌙 Diner';
             const nameHtml = m.url ? `<a href="${m.url}" target="_blank" style="color:var(--teal); font-weight:600;">${m.name}</a>` : m.name;
-            block += `<div class="gp-line">${label}: ${nameHtml}${m.price ? ` — € ${m.price}` : ''}</div>`;
+            const menuHtml = m.menuUrl ? ` · <a href="${m.menuUrl}" target="_blank" style="color:var(--brass); font-weight:600;">menu</a>` : '';
+            block += `<div class="gp-line">${label}: ${nameHtml}${menuHtml}${m.price ? ` — € ${m.price}` : ''}${m.rating ? ` — ⭐ ${m.rating}/10` : ''}</div>`;
+            if(m.review) block += `<div class="gp-line" style="font-style:italic;">"${m.review}"</div>`;
           }
         });
       }
