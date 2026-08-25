@@ -153,7 +153,14 @@
 
   .section{margin-top:22px;}
   .section h3{font-size:14px; text-transform:uppercase; letter-spacing:1.5px; color:#5b5140; font-style:normal; font-family:'IBM Plex Mono',monospace; font-weight:500;}
+  .section h3 .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:50%; background:var(--teal); color:white;
+    font-size:11px; margin-right:8px; vertical-align:middle;
+  }
   .section .hr{height:1px; background:rgba(0,0,0,0.1); margin:8px 0 12px;}
+  .cost-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
+  .cost-row.total{font-weight:700; border-bottom:none; padding-top:10px; font-size:16px; color:var(--teal);}
 
   .note-item{
     background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px; font-size:14px; line-height:1.4;
@@ -274,17 +281,38 @@
     <button class="back-btn" onclick="closeDetail()">← terug naar overzicht</button>
     <div class="page">
       <h2 id="d-name">—</h2>
-      <div class="dest-line" id="d-dest">—</div>
-      <div class="dest-line" id="d-dates" style="margin-top:6px; font-size:13px;">—</div>
-      <div id="dateEditBox" style="display:none; margin-top:8px; gap:8px; align-items:center; flex-wrap:wrap;">
-        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <label style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:#5b5140;">van<br>
-            <input type="date" id="editStartDate" style="margin-bottom:0; padding:6px 8px;">
-          </label>
-          <label style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:#5b5140;">tot<br>
-            <input type="date" id="editEndDate" style="margin-bottom:0; padding:6px 8px;">
-          </label>
-          <button onclick="saveDates()" style="align-self:flex-end;">opslaan</button>
+
+      <div class="section" style="margin-top:16px;">
+        <h3><span class="num">1</span>Waar</h3>
+        <div class="hr"></div>
+        <div class="dest-line" id="d-dest" style="font-size:15px;">—</div>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">2</span>Transport</h3>
+        <div class="hr"></div>
+        <div id="d-transport"></div>
+        <div class="inline-add">
+          <input type="text" id="newTransportName" placeholder="Vervoer (bv. vlucht BRU-ALC)" style="flex:2;">
+          <input type="text" id="newTransportUrl" placeholder="Link" style="flex:2;">
+          <button onclick="addTransport()">+</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">3</span>Wanneer</h3>
+        <div class="hr"></div>
+        <div class="dest-line" id="d-dates" style="font-size:15px;">—</div>
+        <div id="dateEditBox" style="display:none; margin-top:8px; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <label style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:#5b5140;">van<br>
+              <input type="date" id="editStartDate" style="margin-bottom:0; padding:6px 8px;">
+            </label>
+            <label style="font-size:11px; font-family:'IBM Plex Mono',monospace; color:#5b5140;">tot<br>
+              <input type="date" id="editEndDate" style="margin-bottom:0; padding:6px 8px;">
+            </label>
+            <button onclick="saveDates()" style="align-self:flex-end;">opslaan</button>
+          </div>
         </div>
       </div>
 
@@ -295,13 +323,60 @@
       </div>
 
       <div class="section">
-        <h3>Hotel</h3>
+        <h3><span class="num">4</span>Dagindeling</h3>
+        <div class="hr"></div>
+        <div id="d-guidedays"></div>
+        <div class="inline-add">
+          <button class="add-btn" style="width:100%;" onclick="addGuideDay()">+ dag toevoegen</button>
+        </div>
+        <button class="guide-preview-btn" onclick="openGuidePreview()">📖 Bekijk reisgids</button>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">5</span>Restaurants per dag</h3>
+        <div class="hr"></div>
+        <div id="d-restaurants"></div>
+      </div>
+
+      <div class="section">
+        <h3>Verblijf</h3>
         <div class="hr"></div>
         <div id="d-hotels"></div>
         <div class="inline-add">
           <input type="text" id="newHotelName" placeholder="Naam hotel" style="flex:2;">
           <input type="text" id="newHotelUrl" placeholder="Link (https://…)" style="flex:2;">
           <button onclick="addHotel()">+</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">6</span>Kostprijs per onderdeel</h3>
+        <div class="hr"></div>
+        <div id="d-costbreakdown"></div>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">7</span>Totale kostprijs</h3>
+        <div class="hr"></div>
+        <div id="d-costtotal"></div>
+        <div style="margin-top:10px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#5b5140; font-family:'IBM Plex Mono',monospace; margin-bottom:4px;">Overige kosten</div>
+          <div id="d-budget"></div>
+          <div class="inline-add">
+            <input type="text" id="newBudgetLabel" placeholder="Post (bv. verzekering)" style="flex:2;">
+            <input type="text" id="newBudgetAmount" placeholder="€" style="flex:1;">
+            <button onclick="addBudget()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3><span class="num">8</span>Extra suggesties &amp; ideeën</h3>
+        <div class="hr"></div>
+        <div id="d-notes"></div>
+        <div class="inline-add">
+          <input type="text" id="newNote" placeholder="Nieuw idee of notitie…">
+          <button onclick="addNote()">+</button>
         </div>
       </div>
 
@@ -321,16 +396,6 @@
       </div>
 
       <div class="section">
-        <h3>Losse ideeën &amp; notities</h3>
-        <div class="hr"></div>
-        <div id="d-notes"></div>
-        <div class="inline-add">
-          <input type="text" id="newNote" placeholder="Nieuw idee of notitie…">
-          <button onclick="addNote()">+</button>
-        </div>
-      </div>
-
-      <div class="section">
         <h3>Checklist</h3>
         <div class="hr"></div>
         <div id="d-checklist"></div>
@@ -338,33 +403,6 @@
           <input type="text" id="newCheck" placeholder="Nieuwe actie…">
           <button onclick="addCheck()">+</button>
         </div>
-      </div>
-
-      <div class="section">
-        <h3>Budget</h3>
-        <div class="hr"></div>
-        <div id="d-budget"></div>
-        <div class="inline-add">
-          <input type="text" id="newBudgetLabel" placeholder="Post (bv. Hotel)" style="flex:2;">
-          <input type="text" id="newBudgetAmount" placeholder="€" style="flex:1;">
-          <button onclick="addBudget()">+</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Restaurants per dag</h3>
-        <div class="hr"></div>
-        <div id="d-restaurants"></div>
-      </div>
-
-      <div class="section">
-        <h3>Dagindeling (reisgids)</h3>
-        <div class="hr"></div>
-        <div id="d-guidedays"></div>
-        <div class="inline-add">
-          <button class="add-btn" style="width:100%;" onclick="addGuideDay()">+ dag toevoegen</button>
-        </div>
-        <button class="guide-preview-btn" onclick="openGuidePreview()">📖 Bekijk reisgids</button>
       </div>
 
       <div class="section">
@@ -501,6 +539,12 @@ async function loadTrips(){
           {date:'2026-11-11', title:'Dagtrip Benidorm', transport:'TRAM lijn 1 vanaf Luceros, ±1u10-1u20, €2,80 enkel', cost:'', notes:'🧭 Route naar station Luceros: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · 🕐 Uurregeling: https://www.tramalacant.es · 🚕 Verplaatsingen in Benidorm zelf met Uber'}
         ];
       }
+      if(!a.transport){
+        updates.transport = [
+          {direction:'heen', name:'Transavia BRU → ALC', time:'07:00 → 09:30', price:'', url:'https://www.lastminute.ie/msr/route/searching.do?departureAirport=BRU&arrivalAirport=ALC&outboundDay=10&outboundMonthYear=112026&returnDay=13&returnMonthYear=112026&adults=2&childs=0&infants=0&COBRANDED=LMNEN_LLMPROJECTEN&currency=EUR&url=search3.do&roundtrip=true'},
+          {direction:'terug', name:'Tui Fly Belgium ALC → BRU', time:'17:20 → 20:15', price:'338.98', url:'https://www.lastminute.ie/msr/route/searching.do?departureAirport=ALC&arrivalAirport=BRU&outboundDay=13&outboundMonthYear=112026&adults=2&childs=0&infants=0&COBRANDED=LMNEN_LLMPROJECTEN&currency=EUR&url=search3.do&roundtrip=false'}
+        ];
+      }
       if(Object.keys(updates).length){
         await db.collection('trips').doc('alicante-nov').update(updates);
         needsReload = true;
@@ -578,7 +622,11 @@ async function seedAlicante(){
       "Donderdag 12/11: laatste avond in Alicante — diner bij best gewaardeerde adres (Koinè Bistró)"
     ],
     hotels: [
-      {name: "Les Monges Palace Boutique — C/ de Sant Agustí 4, op proef, 10-13 nov (3 nachten)", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-13&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261113&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}
+      {name: "Les Monges Palace Boutique — C/ de Sant Agustí 4, op proef, 10-13 nov (3 nachten)", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-13&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261113&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417", price: ''}
+    ],
+    transport: [
+      {direction:'heen', name:'Transavia BRU → ALC', time:'07:00 → 09:30', price:'', url:'https://www.lastminute.ie/msr/route/searching.do?departureAirport=BRU&arrivalAirport=ALC&outboundDay=10&outboundMonthYear=112026&returnDay=13&returnMonthYear=112026&adults=2&childs=0&infants=0&COBRANDED=LMNEN_LLMPROJECTEN&currency=EUR&url=search3.do&roundtrip=true'},
+      {direction:'terug', name:'Tui Fly Belgium ALC → BRU', time:'17:20 → 20:15', price:'338.98', url:'https://www.lastminute.ie/msr/route/searching.do?departureAirport=ALC&arrivalAirport=BRU&outboundDay=13&outboundMonthYear=112026&adults=2&childs=0&infants=0&COBRANDED=LMNEN_LLMPROJECTEN&currency=EUR&url=search3.do&roundtrip=false'}
     ],
     checklist: [
       {text:"Hotel Les Monges Palace definitief bevestigen (3 nachten, 10-13 nov)", done:false},
@@ -586,10 +634,7 @@ async function seedAlicante(){
       {text:"Trein/tram-tickets Benidorm bekijken (dag zelf te koop)", done:false},
       {text:"Reserveren bij Koinè Bistró, The Velvet Fork en La Callaíta", done:false}
     ],
-    budget: [
-      {label:"Hotel (3 nachten)", amount:330},
-      {label:"Vlucht (2 pers.)", amount:280}
-    ],
+    budget: [],
     restaurantPlan: {
       "2026-11-10": {lunch:{name:'El Loco del Mar (Mercado Central)',price:'',url:'https://www.google.com/maps/place/?q=place_id:ChIJaRZ5Bi43Yg0R0xMMfdXh1mw'}, dinner:{name:'The Velvet Fork',price:'',url:'https://www.thefork.es/restaurante/the-velvet-fork-r832598'}},
       "2026-11-11": {lunch:{name:'Lunch in Benidorm (ter plekke)',price:'',url:''}, dinner:{name:'La Callaíta Gastro Bar',price:'',url:'https://www.restaurantelacallaita.es/'}},
@@ -615,7 +660,14 @@ function renderDashboard(){
   grid.innerHTML = ids.map(id => {
     const t = trips[id];
     const st = STATUSES.find(s => s.key === t.status) || STATUSES[0];
-    const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
+    const num = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+    const hotelTotal = (t.hotels||[]).reduce((s,h)=>s+num(h.price),0);
+    const transportTotal = (t.transport||[]).reduce((s,tr)=>s+num(tr.price),0);
+    let restaurantTotal = 0;
+    Object.values(t.restaurantPlan||{}).forEach(day => {
+      ['lunch','dinner'].forEach(meal => { if(day[meal]) restaurantTotal += num(day[meal].price); });
+    });
+    const budgetTotal = hotelTotal + transportTotal + restaurantTotal + (t.budget||[]).reduce((s,b)=>s+num(b.amount),0);
     const hasGuide = !!t.guideUrl;
     const cardClick = hasGuide ? `window.open('${t.guideUrl}','_blank')` : `openDetail('${id}')`;
     return `
@@ -659,11 +711,22 @@ function renderDetail(){
   document.getElementById('d-name').innerHTML =
     `${t.name || 'Naamloos'} <span class="edit" style="font-size:14px; vertical-align:middle;" onclick="editName()">✎</span>`;
   document.getElementById('d-dest').innerHTML =
-    `${t.destination || ''} <span class="edit" onclick="editDestination()">✎</span>`;
+    `${t.destination || 'nog niet ingevuld'} <span class="edit" onclick="editDestination()">✎</span>`;
   document.getElementById('d-dates').innerHTML =
     `📅 ${formatDateRangeNl(t.startDate, t.endDate) || 'nog geen data'} <span class="edit" onclick="editDates()">✎</span>`;
 
+  document.getElementById('d-transport').innerHTML = (t.transport||[]).map((tr,i) => `
+    <div class="hotel-item">
+      <a href="${tr.url||'#'}" target="_blank">${tr.direction==='terug' ? '🛬' : '🛫'} ${tr.direction==='terug'?'Terug':'Heen'} — ${tr.name}${tr.time ? ' · '+tr.time : ''}</a>
+      <span class="item-actions">
+        ${tr.price ? `<span class="mono" style="font-size:12.5px; color:#5b5140;">€ ${tr.price}</span>` : ''}
+        <span class="edit" onclick="editTransport(${i})">✎</span>
+        <span class="del" onclick="delTransport(${i})">verwijder</span>
+      </span>
+    </div>`).join('') || '<div class="empty" style="padding:14px 0;">Nog geen transport ingevuld</div>';
+
   renderRestaurants();
+  renderCostBreakdown();
 
   document.getElementById('d-status').innerHTML = STATUSES.map(s =>
     `<button class="${s.key===t.status?'active':''}" onclick="setStatus('${s.key}')">${s.label}</button>`
@@ -678,7 +741,7 @@ function renderDetail(){
   }
 
   document.getElementById('d-hotels').innerHTML = (t.hotels||[]).map((h,i) =>
-    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions"><span class="edit" onclick="addGuideDayFromHotel(${i})" title="toevoegen aan gids">📖</span><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
+    `<div class="hotel-item"><a href="${h.url}" target="_blank">🏨 ${h.name}</a><span class="item-actions">${h.price ? `<span class="mono" style="font-size:12.5px; color:#5b5140;">€ ${h.price}</span>` : ''}<span class="edit" onclick="addGuideDayFromHotel(${i})" title="toevoegen aan gids">📖</span><span class="edit" onclick="editHotel(${i})">✎</span><span class="del" onclick="delHotel(${i})">verwijder</span></span></div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen hotel gekozen</div>';
 
   document.getElementById('d-confirmations').innerHTML = (t.confirmations||[]).map((c,i) =>
@@ -697,10 +760,9 @@ function renderDetail(){
     </div>`
   ).join('') || '<div class="empty" style="padding:14px 0;">Nog geen acties</div>';
 
-  const budgetTotal = (t.budget||[]).reduce((s,b)=>s+Number(b.amount||0),0);
   document.getElementById('d-budget').innerHTML =
     (t.budget||[]).map((b,i) => `<div class="budget-row"><span>${b.label}</span><span style="display:flex; align-items:center; gap:8px;"><span class="mono">€ ${b.amount}</span><span class="edit" onclick="editBudget(${i})">✎</span><span class="del" onclick="delBudget(${i})">verwijder</span></span></div>`).join('')
-    + `<div class="budget-row total"><span>Totaal</span><span class="mono">€ ${budgetTotal}</span></div>`;
+    || '<div class="empty" style="padding:10px 0;">Geen overige kosten</div>';
 
   const sortedDays = (t.guideDays||[]).map((d,origIdx)=>({...d, origIdx})).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   document.getElementById('d-guidedays').innerHTML = sortedDays.map(d => `
@@ -718,6 +780,38 @@ function renderDetail(){
       </span>
     </div>
   `).join('') || '<div class="empty" style="padding:14px 0;">Nog geen dagen toegevoegd</div>';
+}
+
+/* ============================================================
+   KOSTPRIJS PER ONDERDEEL + TOTAAL
+   Telt hotel, transport, restaurants (alle ingevulde prijzen)
+   en overige budgetposten samen, per categorie en als geheel.
+   ============================================================ */
+function renderCostBreakdown(){
+  const t = trips[activeTripId];
+  const num = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+
+  const hotelTotal = (t.hotels||[]).reduce((s,h)=>s+num(h.price),0);
+  const transportTotal = (t.transport||[]).reduce((s,tr)=>s+num(tr.price),0);
+  let restaurantTotal = 0;
+  Object.values(t.restaurantPlan||{}).forEach(day => {
+    ['lunch','dinner'].forEach(meal => { if(day[meal]) restaurantTotal += num(day[meal].price); });
+  });
+  const budgetTotal = (t.budget||[]).reduce((s,b)=>s+num(b.amount),0);
+  const grandTotal = hotelTotal + transportTotal + restaurantTotal + budgetTotal;
+
+  const rows = [
+    ['🏨 Verblijf', hotelTotal],
+    ['✈️ Transport', transportTotal],
+    ['🍽️ Restaurants', restaurantTotal],
+    ['📎 Overige kosten', budgetTotal]
+  ];
+  document.getElementById('d-costbreakdown').innerHTML = rows.map(([label, amount]) =>
+    `<div class="cost-row"><span>${label}</span><span class="mono">€ ${amount.toFixed(2).replace('.00','')}</span></div>`
+  ).join('');
+
+  document.getElementById('d-costtotal').innerHTML =
+    `<div class="cost-row total"><span>Totaal</span><span class="mono">€ ${grandTotal.toFixed(2).replace('.00','')}</span></div>`;
 }
 
 async function saveTrip(){
@@ -856,7 +950,7 @@ function addHotel(){
   const u = document.getElementById('newHotelUrl');
   if(!n.value.trim() || !u.value.trim()) return;
   trips[activeTripId].hotels = trips[activeTripId].hotels || [];
-  trips[activeTripId].hotels.push({name:n.value.trim(), url:u.value.trim()});
+  trips[activeTripId].hotels.push({name:n.value.trim(), url:u.value.trim(), price:''});
   n.value=''; u.value='';
   saveTrip(); renderDetail();
 }
@@ -868,7 +962,40 @@ function editHotel(i){
   if(name === null) return;
   const url = prompt("Link:", h.url);
   if(url === null) return;
-  trips[activeTripId].hotels[i] = {name: name.trim(), url: url.trim()};
+  const price = prompt("Kostprijs totaal (€):", h.price || '');
+  if(price === null) return;
+  trips[activeTripId].hotels[i] = {name: name.trim(), url: url.trim(), price: price.trim()};
+  saveTrip(); renderDetail();
+}
+
+/* ============================================================
+   TRANSPORT
+   Heen- en terugreis: vliegtuig, trein, wagen... Elk item heeft
+   een richting, naam/maatschappij, tijdstip, prijs en link.
+   ============================================================ */
+function addTransport(){
+  const n = document.getElementById('newTransportName');
+  const u = document.getElementById('newTransportUrl');
+  if(!n.value.trim()) return;
+  trips[activeTripId].transport = trips[activeTripId].transport || [];
+  trips[activeTripId].transport.push({direction:'heen', name:n.value.trim(), time:'', price:'', url:u.value.trim()});
+  n.value=''; u.value='';
+  saveTrip(); renderDetail();
+}
+function delTransport(i){ if(!confirm("Dit transportitem verwijderen?")) return; trips[activeTripId].transport.splice(i,1); saveTrip(); renderDetail(); }
+function editTransport(i){
+  const tr = trips[activeTripId].transport[i];
+  const direction = prompt("Richting (heen/terug):", tr.direction || 'heen');
+  if(direction === null) return;
+  const name = prompt("Vervoer (bv. Transavia BRU-ALC):", tr.name);
+  if(name === null) return;
+  const time = prompt("Tijdstip (bv. 07:00 → 09:30):", tr.time || '');
+  if(time === null) return;
+  const price = prompt("Kostprijs (€, samen):", tr.price || '');
+  if(price === null) return;
+  const url = prompt("Link om te boeken:", tr.url || '');
+  if(url === null) return;
+  trips[activeTripId].transport[i] = {direction: direction.trim(), name: name.trim(), time: time.trim(), price: price.trim(), url: url.trim()};
   saveTrip(); renderDetail();
 }
 
@@ -1031,10 +1158,17 @@ function openGuidePreview(){
 
   let html = '';
 
-  // Hotel bovenaan
+  // Transport bovenaan
+  if((t.transport||[]).length){
+    html += `<div class="section" style="margin-top:0;"><h3>Transport</h3><div class="hr"></div>`;
+    html += t.transport.map(tr => `<div class="gp-line">${tr.direction==='terug'?'🛬':'🛫'} ${tr.direction==='terug'?'Terug':'Heen'}: ${tr.url ? `<a href="${tr.url}" target="_blank" style="color:var(--teal); font-weight:600;">${tr.name}</a>` : tr.name}${tr.time ? ' · '+tr.time : ''}${tr.price ? ' — € '+tr.price : ''}</div>`).join('');
+    html += `</div>`;
+  }
+
+  // Hotel
   if((t.hotels||[]).length){
-    html += `<div class="section" style="margin-top:0;"><h3>Verblijf</h3><div class="hr"></div>`;
-    html += t.hotels.map(h => `<div class="gp-line">🏨 ${h.url ? `<a href="${h.url}" target="_blank" style="color:var(--teal); font-weight:600;">${h.name}</a>` : h.name}</div>`).join('');
+    html += `<div class="section" ${(t.transport||[]).length?'':'style="margin-top:0;"'}><h3>Verblijf</h3><div class="hr"></div>`;
+    html += t.hotels.map(h => `<div class="gp-line">🏨 ${h.url ? `<a href="${h.url}" target="_blank" style="color:var(--teal); font-weight:600;">${h.name}</a>` : h.name}${h.price ? ' — € '+h.price : ''}</div>`).join('');
     html += `</div>`;
   }
 
@@ -1085,12 +1219,23 @@ function openGuidePreview(){
     html += `</div>`;
   }
 
-  // Budget onderaan
-  if((t.budget||[]).length){
-    const total = t.budget.reduce((s,b)=>s+Number(b.amount||0),0);
-    html += `<div class="section"><h3>Budget</h3><div class="hr"></div>`;
-    html += t.budget.map(b => `<div class="gp-line">${b.label}: € ${b.amount}</div>`).join('');
-    html += `<div class="gp-line" style="font-weight:600; margin-top:6px;">Totaal: € ${total}</div></div>`;
+  // Kostprijs onderaan
+  const num = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+  const hotelTotal = (t.hotels||[]).reduce((s,h)=>s+num(h.price),0);
+  const transportTotal = (t.transport||[]).reduce((s,tr)=>s+num(tr.price),0);
+  let restaurantTotal = 0;
+  Object.values(t.restaurantPlan||{}).forEach(day => {
+    ['lunch','dinner'].forEach(meal => { if(day[meal]) restaurantTotal += num(day[meal].price); });
+  });
+  const overigeTotal = (t.budget||[]).reduce((s,b)=>s+num(b.amount),0);
+  const grandTotal = hotelTotal + transportTotal + restaurantTotal + overigeTotal;
+  if(grandTotal > 0){
+    html += `<div class="section"><h3>Kostprijs</h3><div class="hr"></div>`;
+    if(hotelTotal) html += `<div class="gp-line">🏨 Verblijf: € ${hotelTotal.toFixed(2).replace('.00','')}</div>`;
+    if(transportTotal) html += `<div class="gp-line">✈️ Transport: € ${transportTotal.toFixed(2).replace('.00','')}</div>`;
+    if(restaurantTotal) html += `<div class="gp-line">🍽️ Restaurants: € ${restaurantTotal.toFixed(2).replace('.00','')}</div>`;
+    (t.budget||[]).forEach(b => { html += `<div class="gp-line">📎 ${b.label}: € ${b.amount}</div>`; });
+    html += `<div class="gp-line" style="font-weight:700; margin-top:6px; color:var(--teal);">Totaal: € ${grandTotal.toFixed(2).replace('.00','')}</div></div>`;
   }
 
   if(!html){
@@ -1120,7 +1265,7 @@ async function openNewTrip(){
   if(!name) return;
   const dest = prompt("Bestemming:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {name, destination:dest, status:'idee', startDate:'', endDate:'', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
+  trips[id] = {name, destination:dest, status:'idee', startDate:'', endDate:'', notes:[], checklist:[], budget:[], transport:[], guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
   renderDashboard();
   openDetail(id);
