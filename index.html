@@ -367,6 +367,10 @@
         <button class="guide-preview-btn" onclick="openGuidePreview()">📖 Bekijk reisgids</button>
       </div>
 
+      <div class="section">
+        <button class="guide-preview-btn" style="background:var(--stamp-red);" onclick="deleteTrip()">🗑 Deze trip verwijderen</button>
+      </div>
+
     </div>
   </div>
 
@@ -1055,6 +1059,14 @@ function openGuidePreview(){
 function closeGuidePreview(){
   document.getElementById('guidePreview').classList.remove('active');
   document.getElementById('detail').classList.add('active');
+}
+
+async function deleteTrip(){
+  const t = trips[activeTripId];
+  if(!confirm(`"${t.name || 'Deze trip'}" definitief verwijderen? Dit kan niet ongedaan gemaakt worden.`)) return;
+  await db.collection('trips').doc(activeTripId).delete();
+  delete trips[activeTripId];
+  closeDetail();
 }
 
 async function openNewTrip(){
