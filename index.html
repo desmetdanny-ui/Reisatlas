@@ -1061,10 +1061,8 @@ async function openNewTrip(){
   const name = prompt("Naam van de trip (bv. Sicilië):");
   if(!name) return;
   const dest = prompt("Bestemming:") || "";
-  const start = prompt("Vertrekdatum (JJJJ-MM-DD), mag later ingevuld worden:") || "";
-  const end = prompt("Einddatum (JJJJ-MM-DD), mag later ingevuld worden:") || "";
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  trips[id] = {name, destination:dest, status:'idee', startDate:start.trim(), endDate:end.trim(), notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
+  trips[id] = {name, destination:dest, status:'idee', startDate:'', endDate:'', notes:[], checklist:[], budget:[], guideUrl:"", createdAt:Date.now()};
   await db.collection('trips').doc(id).set(trips[id]);
   renderDashboard();
   openDetail(id);
