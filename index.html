@@ -552,28 +552,32 @@ async function seedAlicante(){
     notes: [
       "Aankomst dinsdag 10 nov 2026, vertrek vrijdag 13 nov 2026 — 3 nachten, eerste dinsdag na de herfstvakantie",
       "Hotel Les Monges Palace Boutique op proef — als het bevalt vast hotel voor Alicante",
-      "Vast romantisch restaurant nog te kiezen — kandidaten: Koinè Bistró (Calle Bazán 45, ±400m), The Velvet Fork (±800-900m), La Callaíta Gastro Bar (San Ildefonso 14, ±400m) — alle drie op wandelafstand van het hotel",
-      "1 dag naar Benidorm met de trein/tram (lijn 1 vanuit Alicante, ±1u10, langs de kust)"
+      "Mercado Central + oude stadje (Barrio) bezoeken, lunch ter plekke",
+      "Woensdag 11/11: dagtrip Benidorm met de trein/tram, lunch ter plekke in Benidorm",
+      "Donderdag 12/11: laatste avond in Alicante — diner bij best gewaardeerde adres (Koinè Bistró)"
     ],
     hotels: [
       {name: "Les Monges Palace Boutique — C/ de Sant Agustí 4, op proef, 10-13 nov (3 nachten)", url: "https://www.lastminute.com/s/tsx/330999?pageType=review&destination=136559&dateFrom=2026-11-10&dateTo=2026-11-13&sort=recommended&source=gptmcp&bfSubSource=-----TL0S10RS01&businessProfileId=HOT_LMNIE_LLMPROJECTPIE&adults=2&departureIntervals=20261110-20261113&roomId=330999DOUBLE-1&mealPlanId=-953798299&mealPlanCode=BORF20261107&searchMode=HO&vcSearchId=443427417"}
     ],
     checklist: [
-      {text:"Vast restaurant kiezen tussen Koinè Bistró, The Velvet Fork en La Callaíta", done:false},
       {text:"Hotel Les Monges Palace definitief bevestigen (3 nachten, 10-13 nov)", done:false},
       {text:"Vlucht boeken (Zaventem, handbagage)", done:false},
-      {text:"Trein/tram-tickets Benidorm bekijken (dag zelf te koop)", done:false}
+      {text:"Trein/tram-tickets Benidorm bekijken (dag zelf te koop)", done:false},
+      {text:"Reserveren bij Koinè Bistró, The Velvet Fork en La Callaíta", done:false}
     ],
     budget: [
       {label:"Hotel (3 nachten)", amount:330},
       {label:"Vlucht (2 pers.)", amount:280}
     ],
     restaurantPlan: {
-      "2026-11-10": {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}},
-      "2026-11-11": {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}},
-      "2026-11-12": {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}},
+      "2026-11-10": {lunch:{name:'El Loco del Mar (Mercado Central)',price:'',url:'https://www.google.com/maps/place/?q=place_id:ChIJaRZ5Bi43Yg0R0xMMfdXh1mw'}, dinner:{name:'The Velvet Fork',price:'',url:'https://www.thefork.es/restaurante/the-velvet-fork-r832598'}},
+      "2026-11-11": {lunch:{name:'Lunch in Benidorm (ter plekke)',price:'',url:''}, dinner:{name:'La Callaíta Gastro Bar',price:'',url:'https://www.restaurantelacallaita.es/'}},
+      "2026-11-12": {lunch:{name:'',price:'',url:''}, dinner:{name:'Koinè Bistró',price:'',url:'https://koine-bistro.es/en/reservas/'}},
       "2026-11-13": {lunch:{name:'',price:'',url:''}, dinner:{name:'',price:'',url:''}}
-    }
+    },
+    guideDays: [
+      {date:'2026-11-11', title:'Dagtrip Benidorm', transport:'TRAM lijn 1 vanaf Luceros, ±1u10-1u20, €2,80 enkel', cost:'', notes:'🧭 Route naar station Luceros: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · 🕐 Uurregeling: https://www.tramalacant.es · 🚕 Verplaatsingen in Benidorm zelf met Uber'}
+    ]
   });
 }
 
@@ -685,7 +689,7 @@ function renderDetail(){
         <div class="day-title">${d.title||''}</div>
         ${d.transport ? `<div class="day-line">🚌 ${d.transport}</div>` : ''}
         ${d.cost ? `<div class="day-line">€ ${d.cost}</div>` : ''}
-        ${d.notes ? `<div class="day-line">${d.notes}</div>` : ''}
+        ${d.notes ? `<div class="day-line">${linkify(d.notes)}</div>` : ''}
       </div>
       <span class="item-actions" style="align-self:flex-start;">
         <span class="edit" onclick="editGuideDay(${d.origIdx})">✎</span>
@@ -941,6 +945,11 @@ function formatDateNl(iso){
   }catch(e){ return iso; }
 }
 
+function linkify(text){
+  if(!text) return '';
+  return text.replace(/(https?:\/\/[^\s·]+)/g, '<a href="$1" target="_blank" style="color:var(--teal); font-weight:600;">$1</a>');
+}
+
 function addGuideDay(){
   const date = prompt("Datum (JJJJ-MM-DD), bv. 2026-11-12:");
   if(date === null || !date.trim()) return;
@@ -1020,7 +1029,7 @@ function openGuidePreview(){
         block += `<h3>${d.title||''}</h3>`;
         if(d.transport) block += `<div class="gp-line">🚌 ${d.transport}</div>`;
         if(d.cost) block += `<div class="gp-line">€ ${d.cost}</div>`;
-        if(d.notes) block += `<div class="gp-line">${d.notes}</div>`;
+        if(d.notes) block += `<div class="gp-line">${linkify(d.notes)}</div>`;
       });
       const rp = (t.restaurantPlan||{})[iso];
       if(rp){
