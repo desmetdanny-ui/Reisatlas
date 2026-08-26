@@ -570,6 +570,9 @@ async function loadTrips(){
           "2026-11-13": "Vertrekdag"
         };
       }
+      if(!a.guideUrl){
+        updates.guideUrl = "https://desmetdanny-ui.github.io/Alicante/";
+      }
       if(Object.keys(updates).length){
         await db.collection('trips').doc('alicante-nov').update(updates);
         needsReload = true;
@@ -638,7 +641,7 @@ async function seedAlicante(){
     startDate: "2026-11-10",
     endDate: "2026-11-13",
     createdAt: Date.now(),
-    guideUrl: "",
+    guideUrl: "https://desmetdanny-ui.github.io/Alicante/",
     notes: [
       "Aankomst dinsdag 10 nov 2026, vertrek vrijdag 13 nov 2026 — 3 nachten, eerste dinsdag na de herfstvakantie",
       "Hotel Les Monges Palace Boutique op proef — als het bevalt vast hotel voor Alicante",
