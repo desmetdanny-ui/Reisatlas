@@ -341,6 +341,7 @@ async function loadTrips(){
 
     let needsReload = false;
     if(!trips['alicante-nov']){ await seedAlicante(); needsReload = true; }
+    if(!trips['msc-world-asia-2027']){ await seedMscWorldAsia(); needsReload = true; }
     if(!trips['aveiro-2026']){ await seedAveiro(); needsReload = true; }
     if(!trips['lanzarote-2027']){ await seedLanzarote(); needsReload = true; }
 
@@ -401,6 +402,21 @@ async function seedAlicante(){
     createdAt: Date.now(),
     guideUrl: "https://desmetdanny-ui.github.io/Alicante/",
     notes: [],
+    checklist: [],
+    budget: []
+  });
+}
+
+async function seedMscWorldAsia(){
+  await db.collection('trips').doc('msc-world-asia-2027').set({
+    name: "MSC World Asia",
+    destination: "Middellandse Zee — Marseille, Genua, Civitavecchia, Messina, Valletta, Barcelona",
+    status: "bevestigd",
+    startDate: "2027-03-20",
+    endDate: "2027-03-27",
+    createdAt: Date.now(),
+    guideUrl: "https://desmetdanny-ui.github.io/MSC-World-Asia/",
+    notes: ["Danny's 70ste verjaardag (26/03) valt tijdens deze cruise, op zee"],
     checklist: [],
     budget: []
   });
