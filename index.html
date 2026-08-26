@@ -556,7 +556,8 @@ function formatDateRangeNl(start, end){
 }
 
 function saveGuideUrl(){
-  const url = document.getElementById('newGuideUrl').value.trim();
+  let url = document.getElementById('newGuideUrl').value.trim();
+  if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
   trips[activeTripId].guideUrl = url;
   saveTrip(); renderDetail(); renderDashboard();
 }
