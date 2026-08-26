@@ -162,6 +162,32 @@
   .cost-row{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:14px; padding:6px 0; border-bottom:1px dotted rgba(0,0,0,0.15);}
   .cost-row.total{font-weight:700; border-bottom:none; padding-top:10px; font-size:16px; color:var(--teal);}
 
+  .day-tree{margin-bottom:10px;}
+  .day-btn{
+    width:100%; text-align:left; background:rgba(255,255,255,0.4); border:1px solid rgba(0,0,0,0.08);
+    border-radius:4px; padding:12px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono',monospace; color:var(--ink);
+  }
+  .day-btn .day-btn-title{font-weight:600; font-size:14.5px; text-transform:capitalize;}
+  .day-btn .day-btn-sum{font-size:11px; color:#5b5140; margin-top:2px;}
+  .day-btn .chevron{transition:transform .15s ease; font-size:12px; color:var(--brass);}
+  .day-btn.open .chevron{transform:rotate(90deg);}
+  .day-content{
+    display:none; padding:14px 12px 6px 12px; background:rgba(255,255,255,0.2);
+    border:1px solid rgba(0,0,0,0.06); border-top:none; border-radius:0 0 4px 4px;
+  }
+  .day-content.open{display:block;}
+  .day-block-label{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--brass); font-weight:600;
+    font-family:'IBM Plex Mono',monospace; margin-bottom:6px; margin-top:12px;
+  }
+  .day-block-label:first-child{margin-top:0;}
+  .activity-box{
+    background:rgba(255,255,255,0.5); border-radius:3px; padding:10px 12px; font-size:13.5px; cursor:pointer;
+    min-height:20px; color:#3a3327;
+  }
+  .activity-box.empty-txt{color:rgba(33,43,36,0.4); font-style:italic;}
+
   .note-item{
     background:rgba(255,255,255,0.35); border-radius:3px; padding:10px 12px; margin-bottom:8px; font-size:14px; line-height:1.4;
     display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
@@ -325,17 +351,8 @@
       <div class="section">
         <h3><span class="num">4</span>Dagindeling</h3>
         <div class="hr"></div>
-        <div id="d-guidedays"></div>
-        <div class="inline-add">
-          <button class="add-btn" style="width:100%;" onclick="addGuideDay()">+ dag toevoegen</button>
-        </div>
+        <div id="d-daytree"></div>
         <button class="guide-preview-btn" onclick="openGuidePreview()">📖 Bekijk reisgids</button>
-      </div>
-
-      <div class="section">
-        <h3><span class="num">5</span>Restaurants per dag</h3>
-        <div class="hr"></div>
-        <div id="d-restaurants"></div>
       </div>
 
       <div class="section">
@@ -545,6 +562,14 @@ async function loadTrips(){
           {direction:'terug', name:'Tui Fly Belgium ALC → BRU', time:'17:20 → 20:15', price:'338.98', url:'https://www.lastminute.ie/msr/route/searching.do?departureAirport=ALC&arrivalAirport=BRU&outboundDay=13&outboundMonthYear=112026&adults=2&childs=0&infants=0&COBRANDED=LMNEN_LLMPROJECTEN&currency=EUR&url=search3.do&roundtrip=false'}
         ];
       }
+      if(!a.dayActivities){
+        updates.dayActivities = {
+          "2026-11-10": "Aankomst, inchecken hotel, Mercado Central + oude stadje (Barrio) bezoeken",
+          "2026-11-11": "Dagtrip Benidorm — TRAM lijn 1 vanaf Luceros (±1u10-1u20, €2,80 enkel). Route: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · Uurregeling: https://www.tramalacant.es · Verplaatsingen ter plekke met Uber",
+          "2026-11-12": "Laatste volledige dag in Alicante — rustig aan doen",
+          "2026-11-13": "Vertrekdag"
+        };
+      }
       if(Object.keys(updates).length){
         await db.collection('trips').doc('alicante-nov').update(updates);
         needsReload = true;
@@ -643,7 +668,13 @@ async function seedAlicante(){
     },
     guideDays: [
       {date:'2026-11-11', title:'Dagtrip Benidorm', transport:'TRAM lijn 1 vanaf Luceros, ±1u10-1u20, €2,80 enkel', cost:'', notes:'🧭 Route naar station Luceros: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · 🕐 Uurregeling: https://www.tramalacant.es · 🚕 Verplaatsingen in Benidorm zelf met Uber'}
-    ]
+    ],
+    dayActivities: {
+      "2026-11-10": "Aankomst, inchecken hotel, Mercado Central + oude stadje (Barrio) bezoeken",
+      "2026-11-11": "Dagtrip Benidorm — TRAM lijn 1 vanaf Luceros (±1u10-1u20, €2,80 enkel). Route: https://www.google.com/maps/dir/?api=1&destination=Luceros+TRAM+station+Alicante&travelmode=walking · Uurregeling: https://www.tramalacant.es · Verplaatsingen ter plekke met Uber",
+      "2026-11-12": "Laatste volledige dag in Alicante — rustig aan doen",
+      "2026-11-13": "Vertrekdag"
+    }
   });
 }
 
@@ -725,7 +756,7 @@ function renderDetail(){
       </span>
     </div>`).join('') || '<div class="empty" style="padding:14px 0;">Nog geen transport ingevuld</div>';
 
-  renderRestaurants();
+  renderDayTree();
   renderCostBreakdown();
 
   document.getElementById('d-status').innerHTML = STATUSES.map(s =>
@@ -763,23 +794,6 @@ function renderDetail(){
   document.getElementById('d-budget').innerHTML =
     (t.budget||[]).map((b,i) => `<div class="budget-row"><span>${b.label}</span><span style="display:flex; align-items:center; gap:8px;"><span class="mono">€ ${b.amount}</span><span class="edit" onclick="editBudget(${i})">✎</span><span class="del" onclick="delBudget(${i})">verwijder</span></span></div>`).join('')
     || '<div class="empty" style="padding:10px 0;">Geen overige kosten</div>';
-
-  const sortedDays = (t.guideDays||[]).map((d,origIdx)=>({...d, origIdx})).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  document.getElementById('d-guidedays').innerHTML = sortedDays.map(d => `
-    <div class="day-card">
-      <div class="day-date">${d.date ? formatDateNl(d.date) : 'geen datum'}</div>
-      <div class="day-body">
-        <div class="day-title">${d.title||''}</div>
-        ${d.transport ? `<div class="day-line">🚌 ${d.transport}</div>` : ''}
-        ${d.cost ? `<div class="day-line">€ ${d.cost}</div>` : ''}
-        ${d.notes ? `<div class="day-line">${linkify(d.notes)}</div>` : ''}
-      </div>
-      <span class="item-actions" style="align-self:flex-start;">
-        <span class="edit" onclick="editGuideDay(${d.origIdx})">✎</span>
-        <span class="del" onclick="delGuideDay(${d.origIdx})">verwijder</span>
-      </span>
-    </div>
-  `).join('') || '<div class="empty" style="padding:14px 0;">Nog geen dagen toegevoegd</div>';
 }
 
 /* ============================================================
@@ -883,6 +897,90 @@ function syncRestaurantDays(t){
   }
 }
 
+/* ============================================================
+   DAGINDELING — BOOMSTRUCTUUR
+   Eén klikbare knop per dag (van vertrek- tot einddatum). Open
+   je een dag, dan zie je Activiteiten, Lunch en Diner samen,
+   elk apart aan te klikken om te bewerken.
+   ============================================================ */
+let openDays = {};
+
+function syncDayActivities(t){
+  t.dayActivities = t.dayActivities || {};
+}
+
+function toggleDay(iso){
+  openDays[iso] = !openDays[iso];
+  renderDayTree();
+}
+
+function renderDayTree(){
+  const t = trips[activeTripId];
+  syncRestaurantDays(t);
+  syncDayActivities(t);
+  const dates = Object.keys(t.restaurantPlan || {}).sort();
+  const el = document.getElementById('d-daytree');
+  if(dates.length === 0){
+    el.innerHTML = '<div class="empty" style="padding:14px 0;">Vul eerst "Wanneer" in, dan verschijnt hier elke dag.</div>';
+    return;
+  }
+  el.innerHTML = dates.map(iso => {
+    const day = t.restaurantPlan[iso] || {lunch:{},dinner:{}};
+    const activity = (t.dayActivities||{})[iso] || '';
+    const isOpen = !!openDays[iso];
+    const summaryParts = [];
+    if(activity) summaryParts.push('📍 activiteit');
+    if(day.lunch && day.lunch.name) summaryParts.push('🍽️ lunch');
+    if(day.dinner && day.dinner.name) summaryParts.push('🌙 diner');
+
+    const mealBlock = (meal, label) => {
+      const m = day[meal] || {name:'',price:'',url:'',menuUrl:'',rating:'',review:''};
+      const body = m.name
+        ? `${m.url ? `<a href="${m.url}" target="_blank">${m.name}</a>` : m.name}`
+        : `<span class="rm-empty">nog niet gekozen</span>`;
+      const extras = [];
+      if(m.menuUrl) extras.push(`<a href="${m.menuUrl}" target="_blank" style="color:var(--brass); font-weight:600;">📋 menu</a>`);
+      if(m.rating) extras.push(`<span class="rm-price">⭐ ${m.rating}/10</span>`);
+      return `
+        <div class="day-block-label">${label}</div>
+        <div class="rest-meal" style="flex-wrap:wrap;">
+          <span class="rm-body">${body}</span>
+          ${m.price ? `<span class="rm-price">€ ${m.price}</span>` : ''}
+          ${extras.join('')}
+          <span class="edit" onclick="editMeal('${iso}','${meal}')">✎</span>
+          ${m.review ? `<div style="flex-basis:100%; font-size:12.5px; color:#5b5140; font-style:italic; margin-top:2px;">"${m.review}"</div>` : ''}
+        </div>`;
+    };
+
+    return `
+      <div class="day-tree">
+        <button class="day-btn ${isOpen?'open':''}" onclick="toggleDay('${iso}')">
+          <div>
+            <div class="day-btn-title">${formatDateNl(iso)}</div>
+            <div class="day-btn-sum">${summaryParts.join(' · ') || 'nog niets ingevuld'}</div>
+          </div>
+          <span class="chevron">▶</span>
+        </button>
+        <div class="day-content ${isOpen?'open':''}">
+          <div class="day-block-label">Wat doen we vandaag</div>
+          <div class="activity-box ${activity?'':'empty-txt'}" onclick="editDayActivity('${iso}')">${activity ? linkify(activity) : 'nog niets gepland — klik om in te vullen'}</div>
+          ${mealBlock('lunch','Lunch')}
+          ${mealBlock('dinner','Diner')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function editDayActivity(iso){
+  const t = trips[activeTripId];
+  t.dayActivities = t.dayActivities || {};
+  const val = prompt("Wat doen jullie op " + formatDateNl(iso) + "?", t.dayActivities[iso] || '');
+  if(val === null) return;
+  t.dayActivities[iso] = val.trim();
+  openDays[iso] = true;
+  saveTrip(); renderDayTree();
+}
+
 function renderRestaurants(){
   const t = trips[activeTripId];
   syncRestaurantDays(t);
@@ -942,7 +1040,7 @@ function editMeal(iso, meal){
     name: name.trim(), price: price.trim(), url: url.trim(),
     menuUrl: menuUrl.trim(), rating: rating.trim(), review: review.trim()
   };
-  saveTrip(); renderRestaurants();
+  saveTrip(); renderDayTree();
 }
 
 function addHotel(){
@@ -1194,6 +1292,8 @@ function openGuidePreview(){
     html += `<div class="section"><h3>Dag per dag</h3><div class="hr"></div>`;
     html += sortedDates.map(iso => {
       let block = `<div class="gp-day"><div class="gp-date">${formatDateNl(iso)}</div>`;
+      const activity = (t.dayActivities||{})[iso];
+      if(activity) block += `<div class="gp-line">📍 ${linkify(activity)}</div>`;
       (guideByDate[iso]||[]).forEach(d => {
         block += `<h3>${d.title||''}</h3>`;
         if(d.transport) block += `<div class="gp-line">🚌 ${d.transport}</div>`;
